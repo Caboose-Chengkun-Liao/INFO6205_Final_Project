@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: traffic-optimization
+
+# CORS配置 - 允许前端访问
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+
+# 日志配置
+logging:
+  level:
+    com.traffic.optimization: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# 仿真参数配置
+simulation:
+  # 时间步长（秒）
+  time-step: 1
+  # 道路单位容量（车辆/公里）
+  road-capacity-per-km: 100
+  # 统一速度限制（公里/小时）
+  speed-limit: 60
+  # 效率计算间隔（秒）
+  efficiency-calculation-interval: 3600

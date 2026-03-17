@@ -44,6 +44,9 @@ public class SimulationWebSocketHandler {
         }
 
         try {
+            // 执行仿真步进
+            simulationEngine.step();
+
             Map<String, Object> data = new HashMap<>();
             data.put("timestamp", System.currentTimeMillis());
             data.put("currentTime", simulationEngine.getCurrentTime());

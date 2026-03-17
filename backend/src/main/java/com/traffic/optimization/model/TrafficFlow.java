@@ -204,7 +204,7 @@ public class TrafficFlow {
      * 更新旅行时间（每秒调用）
      */
     public void updateTravelTime(double deltaTime) {
-        if (state == FlowState.ACTIVE) {
+        if (state == FlowState.ACTIVE || state == FlowState.BLOCKED) {
             travelTimeCounter += deltaTime;
             timeOnCurrentEdge += deltaTime;
         }

@@ -126,12 +126,18 @@ public class SimulationController {
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
+        int activeSize = flowManager.getActiveFlowsList().size();
+        int completedSize = flowManager.getCompletedFlowsList().size();
+
+        System.out.println("DEBUG Controller.getStatus: activeFlows=" + activeSize +
+            " completedFlows=" + completedSize);
+
         Map<String, Object> status = new HashMap<>();
         status.put("state", simulationEngine.getState());
         status.put("currentTime", simulationEngine.getCurrentTime());
         status.put("metrics", simulationEngine.getCurrentMetrics());
-        status.put("activeFlows", flowManager.getActiveFlowsList().size());
-        status.put("completedFlows", flowManager.getCompletedFlowsList().size());
+        status.put("activeFlows", activeSize);
+        status.put("completedFlows", completedSize);
 
         return ResponseEntity.ok(status);
     }

@@ -2,10 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { simulationAPI } from '../services/api';
 import './ControlPanel.css';
 
-const ControlPanel = ({ onStateChange }) => {
+const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationState: propSimulationState }) => {
   const [state, setState] = useState('STOPPED');
   const [currentTime, setCurrentTime] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // 使用从WebSocket接收的数据更新本地状态
+  useEffect(() => {
+    if (propSimulationState) {
+      setState(propSimulationState);
+    }
+  }, [propSimulationState]);
+
+  useEffect(() => {
+    if (propCurrentTime !== undefined) {
+      setCurrentTime(propCurrentTime);
+    }
+  }, [propCurrentTime]);
 
   const formatTime = (seconds) => {
     const hours = Math.floor(seconds / 3600);

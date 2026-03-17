@@ -51,13 +51,13 @@ const StatisticsDashboard = () => {
     if (!metrics) return;
 
     setStats({
-      totalVehicles: metrics.totalVehicles || 0,
-      activeFlows: metrics.activeFlows || 0,
-      completedJourneys: metrics.completedFlows || 0,
-      avgEfficiency: metrics.averageEfficiency || 0,
-      avgSpeed: metrics.averageSpeed || 0,
+      totalVehicles: metrics.totalVehicles || (metrics.activeFlowCount * 10) || 0,
+      activeFlows: metrics.activeFlows || metrics.activeFlowCount || 0,
+      completedJourneys: metrics.completedFlows || metrics.completedFlowCount || 0,
+      avgEfficiency: metrics.averageEfficiency || metrics.efficiency || 0,
+      avgSpeed: metrics.averageSpeed || metrics.avgSpeed || 0,
       totalDistance: metrics.totalDistance || 0,
-      avgTravelTime: metrics.averageTravelTime || 0,
+      avgTravelTime: metrics.averageTravelTime || metrics.avgTravelTime || 0,
       networkCongestion: metrics.congestionLevel || 0
     });
   };

@@ -100,10 +100,48 @@ public class Edge {
     }
 
     /**
-     * 计算理想通行时间（分钟）
+     * 获取实际速度（考虑拥堵影响）
+     * 根据道路占用率动态调整速度
+     */
+    public double getActualSpeed() {
+        double occupancyRate = getOccupancyRate();
+
+        if (occupancyRate >= 0.9) {
+            // 严重拥堵：速度降至30%
+            return speedLimit * 0.3;
+        } else if (occupancyRate >= 0.75) {
+            // 高拥堵：速度降至50%
+            return speedLimit * 0.5;
+        } else if (occupancyRate >= 0.5) {
+            // 中等拥堵：速度降至75%
+            return speedLimit * 0.75;
+        } else if (occupancyRate >= 0.25) {
+            // 轻微拥堵：速度降至90%
+            return speedLimit * 0.9;
+        }
+
+        // 畅通：正常速度
+        return speedLimit;
+    }
+
+    /**
+     * 计算理想通行时间（分钟）- 不考虑拥堵
+     * 增加2倍让车辆移动更慢，更容易观察
      */
     public double getIdealTravelTime() {
-        return (distance / speedLimit) * 60;
+        return (distance / speedLimit) * 60 * 2;
+    }
+
+    /**
+     * 计算实际通行时间（分钟）- 考虑拥堵影响
+     * 增加2倍让车辆移动更慢，更容易观察
+     */
+    public double getActualTravelTime() {
+        double actualSpeed = getActualSpeed();
+        if (actualSpeed == 0) {
+            return Double.MAX_VALUE; // 避免除零
+        }
+        return (distance / actualSpeed) * 60 * 2;
     }
 
     /**

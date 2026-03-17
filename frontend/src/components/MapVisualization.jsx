@@ -13,18 +13,14 @@ const MapVisualization = () => {
   const [error, setError] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [hoveredEdge, setHoveredEdge] = useState(null);
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const svgRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Canvas dimensions - larger for better visibility
-  const svgWidth = 1400;
-  const svgHeight = 900;
-  const padding = 80;
+  // Canvas dimensions - optimized for web display
+  const svgWidth = 1600;  // 适配标准宽屏显示器
+  const svgHeight = 800;  // 减小高度以完全展示
+  const padding = 60;
 
   useEffect(() => {
     loadGraphData();
@@ -47,19 +43,31 @@ const MapVisualization = () => {
       }
     });
 
-    return () => unsubscribe && unsubscribe();
+    // 定期重新加载graph数据以获取实时的道路负载
+    const graphRefreshInterval = setInterval(() => {
+      loadGraphData(false); // 后台刷新，不显示loading
+    }, 3000); // 每3秒更新一次
+
+    return () => {
+      unsubscribe && unsubscribe();
+      clearInterval(graphRefreshInterval);
+    };
   }, []);
 
-  const loadGraphData = async () => {
+  const loadGraphData = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const response = await api.get('/simulation/graph');
       setGraphData(response.data);
       setError(null);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load map data');
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -119,42 +127,18 @@ const MapVisualization = () => {
     }
   };
 
-  // Mouse event handlers for pan and zoom
-  const handleMouseDown = (e) => {
-    if (e.button === 0) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-    }
-  };
-
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      setPan({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prevZoom => Math.max(0.5, Math.min(3, prevZoom * delta)));
-  };
+  // 地图固定 - 移除拖拽和缩放功能
 
   // Calculate edge statistics
   const getEdgeStats = (edge) => {
     if (!edge.distance) return null;
     const capacity = edge.distance * 50;
-    const loadPercent = ((edge.currentLoad / capacity) * 100).toFixed(1);
+    const currentLoad = edge.currentLoad || 0;
+    const loadPercent = ((currentLoad / capacity) * 100).toFixed(1);
     return {
       capacity,
       loadPercent,
-      vehicles: edge.currentLoad
+      vehicles: currentLoad
     };
   };
 
@@ -247,46 +231,12 @@ const MapVisualization = () => {
           </div>
         </div>
 
-        {/* Controls */}
-        <div style={styles.controls}>
-          <button
-            onClick={() => setZoom(z => Math.min(3, z * 1.2))}
-            style={styles.controlButton}
-            title="Zoom In"
-          >
-            +
-          </button>
-          <button
-            onClick={() => setZoom(z => Math.max(0.5, z / 1.2))}
-            style={styles.controlButton}
-            title="Zoom Out"
-          >
-            −
-          </button>
-          <button
-            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-            style={styles.controlButton}
-            title="Reset View"
-          >
-            ⟲
-          </button>
-        </div>
-
         {/* SVG Canvas */}
         <svg
           ref={svgRef}
           width={svgWidth}
           height={svgHeight}
-          style={{
-            ...styles.svg,
-            cursor: isDragging ? 'grabbing' : 'grab',
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
-          }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onWheel={handleWheel}
+          style={styles.svg}
         >
           {/* Grid background */}
           <defs>
@@ -645,10 +595,11 @@ const styles = {
     position: 'relative',
     padding: '24px',
     background: '#F8FAFC',
-    minHeight: '700px',
+    minHeight: '850px',  // 适配800px的SVG高度 + padding
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    overflow: 'visible'  // 改为visible以完全展示内容
   },
   svg: {
     background: 'white',
@@ -706,31 +657,6 @@ const styles = {
     height: '1px',
     background: '#E2E8F0',
     margin: '4px 0'
-  },
-  controls: {
-    position: 'absolute',
-    top: '32px',
-    right: '32px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-    zIndex: 10
-  },
-  controlButton: {
-    width: '44px',
-    height: '44px',
-    background: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '20px',
-    fontWeight: 'bold',
-    color: '#667eea',
-    cursor: 'pointer',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-    transition: 'all 0.2s',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
   },
   detailsPanel: {
     position: 'absolute',

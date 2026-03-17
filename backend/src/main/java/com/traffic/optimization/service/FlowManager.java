@@ -128,6 +128,8 @@ public class FlowManager {
 
             // 检查是否完成
             if (flow.isCompleted()) {
+                System.out.println("DEBUG FlowManager: 检测到完成的流 " + flow.getFlowId() +
+                    " state=" + flow.getState() + " isCompleted=" + flow.isCompleted());
                 toRemove.add(flow.getFlowId());
                 completedFlows.put(flow.getFlowId(), flow);
             }
@@ -135,7 +137,13 @@ public class FlowManager {
 
         // 移除已完成的流
         for (String flowId : toRemove) {
+            System.out.println("DEBUG FlowManager: 从activeFlows移除 " + flowId);
             activeFlows.remove(flowId);
+        }
+
+        if (toRemove.size() > 0) {
+            System.out.println("DEBUG FlowManager: 当前活跃流=" + activeFlows.size() +
+                " 已完成流=" + completedFlows.size());
         }
     }
 

@@ -75,7 +75,7 @@ body {
 .app-main {
   flex: 1;
   padding: 30px 40px;
-  max-width: 1400px;
+  max-width: 100%;  /* 使用整个页面宽度 */
   width: 100%;
   margin: 0 auto;
   display: grid;
@@ -101,17 +101,4 @@ body {
 .app-footer p {
   margin: 5px 0;
   font-size: 0.9rem;
-}
-
-@media (max-width: 768px) {
-  .app-main {
-    grid-template-columns: 1fr;
-    padding: 20px;
-  }
-
-  .app-header {
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
-  }
 }

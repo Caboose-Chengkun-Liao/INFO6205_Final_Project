@@ -8,7 +8,7 @@
 
 1. **数据模型** (`backend/src/main/java/com/traffic/optimization/model/`)
    - `Node.java` - 路口/节点模型
-   - `Edge.java` - 道路/边模型
+   - `Edge.java` - 道路/边模型 (包含动态速度调整算法)
    - `Graph.java` - 道路网络图
    - `TrafficFlow.java` - 交通流模型
    - `TrafficLight.java` - 信号灯模型
@@ -46,7 +46,8 @@
 
 3. **主应用**
    - `App.jsx` - 主应用组件
-   - `App.css` - 样式文件
+   - `App.css` - 样式文件 (专为桌面端优化，移除mobile响应式设计)
+   - `index.css` - 全局样式 (全宽布局)
 
 ---
 

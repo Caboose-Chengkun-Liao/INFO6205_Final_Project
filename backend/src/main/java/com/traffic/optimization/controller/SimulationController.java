@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 仿真控制器 - RESTful API
+ * Simulation Controller - RESTful API
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -37,7 +37,7 @@ public class SimulationController {
     private EfficiencyCalculator efficiencyCalculator;
 
     /**
-     * 初始化仿真（使用默认地图）
+     * Initialize simulation (using default map)
      */
     @PostMapping("/initialize")
     public ResponseEntity<Map<String, Object>> initialize() {
@@ -47,7 +47,7 @@ public class SimulationController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "仿真已初始化");
+            response.put("message", "Simulation initialized");
             response.put("graph", getGraphInfo(graph));
 
             return ResponseEntity.ok(response);
@@ -58,59 +58,59 @@ public class SimulationController {
     }
 
     /**
-     * 开始仿真
+     * Start simulation
      */
     @PostMapping("/start")
     public ResponseEntity<Map<String, Object>> start() {
         simulationEngine.start();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已启动",
+            "message", "Simulation started",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 暂停仿真
+     * Pause simulation
      */
     @PostMapping("/pause")
     public ResponseEntity<Map<String, Object>> pause() {
         simulationEngine.pause();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已暂停",
+            "message", "Simulation paused",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 停止仿真
+     * Stop simulation
      */
     @PostMapping("/stop")
     public ResponseEntity<Map<String, Object>> stop() {
         simulationEngine.stop();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已停止",
+            "message", "Simulation stopped",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 重置仿真
+     * Reset simulation
      */
     @PostMapping("/reset")
     public ResponseEntity<Map<String, Object>> reset() {
         simulationEngine.reset();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已重置",
+            "message", "Simulation reset",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 执行单步
+     * Execute single step
      */
     @PostMapping("/step")
     public ResponseEntity<Map<String, Object>> step() {
@@ -122,7 +122,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取仿真状态
+     * Get simulation status
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
@@ -143,7 +143,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取性能指标
+     * Get performance metrics
      */
     @GetMapping("/metrics")
     public ResponseEntity<EfficiencyCalculator.PerformanceMetrics> getMetrics() {
@@ -151,7 +151,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取效率趋势
+     * Get efficiency trend
      */
     @GetMapping("/efficiency/trend")
     public ResponseEntity<List<EfficiencyCalculator.EfficiencyRecord>> getEfficiencyTrend(
@@ -160,7 +160,7 @@ public class SimulationController {
     }
 
     /**
-     * 创建交通流
+     * Create traffic flow
      */
     @PostMapping("/flows")
     public ResponseEntity<Map<String, Object>> createFlow(@RequestBody FlowManager.FlowRequest request) {
@@ -182,19 +182,19 @@ public class SimulationController {
     }
 
     /**
-     * 获取道路网络图数据（用于前端地图渲染）
+     * Get road network graph data (for frontend map rendering)
      */
     @GetMapping("/graph")
     public ResponseEntity<Map<String, Object>> getGraph() {
         Graph graph = simulationEngine.getGraph();
         if (graph == null) {
             return ResponseEntity.badRequest()
-                .body(Map.of("success", false, "error", "仿真未初始化"));
+                .body(Map.of("success", false, "error", "Simulation not initialized"));
         }
 
         Map<String, Object> graphData = new HashMap<>();
 
-        // 节点数据
+        // Node data
         List<Map<String, Object>> nodes = new ArrayList<>();
         for (Node node : graph.getAllNodes()) {
             Map<String, Object> nodeData = new HashMap<>();
@@ -206,7 +206,7 @@ public class SimulationController {
             nodes.add(nodeData);
         }
 
-        // 边数据
+        // Edge data
         List<Map<String, Object>> edges = new ArrayList<>();
         for (Node node : graph.getAllNodes()) {
             for (Edge edge : node.getOutgoingEdges()) {
@@ -227,7 +227,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取车辆位置信息（用于地图可视化）
+     * Get vehicle position information (for map visualization)
      */
     @GetMapping("/vehicles")
     public ResponseEntity<List<Map<String, Object>>> getVehiclePositions() {
@@ -240,13 +240,13 @@ public class SimulationController {
                 vehicleData.put("numberOfCars", flow.getNumberOfCars());
                 vehicleData.put("state", flow.getState().toString());
 
-                // 当前位置信息
+                // Current position information
                 Edge currentEdge = flow.getCurrentEdge();
                 vehicleData.put("currentEdge", currentEdge.getId());
                 vehicleData.put("from", currentEdge.getFromNode().getId());
                 vehicleData.put("to", currentEdge.getToNode().getId());
 
-                // 计算在边上的进度（0-1）
+                // Calculate progress on edge (0-1)
                 double progress = Math.min(1.0,
                     flow.getTimeOnCurrentEdge() / (currentEdge.getIdealTravelTime() * 60));
                 vehicleData.put("progress", progress);
@@ -259,7 +259,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取所有信号灯状态
+     * Get all signal light statuses
      */
     @GetMapping("/signals")
     public ResponseEntity<List<SignalController.SignalStatus>> getSignalStatuses() {
@@ -267,7 +267,7 @@ public class SimulationController {
     }
 
     /**
-     * 设置信号优化模式
+     * Set signal optimization mode
      */
     @PostMapping("/signals/mode")
     public ResponseEntity<Map<String, Object>> setSignalMode(
@@ -280,25 +280,25 @@ public class SimulationController {
     }
 
     /**
-     * 创建默认道路网络图 - 基于弗吉尼亚阿灵顿地区真实路网
+     * Create default road network graph - based on Arlington, Virginia real road network
      */
     private Graph createDefaultGraph() {
         Graph graph = new Graph();
 
-        // ==================== 边界节点（交通流起点/终点） ====================
-        // 北部边界
+        // ==================== Boundary Nodes (Traffic Flow Entry/Exit Points) ====================
+        // North boundary
         Node boundaryN1 = new Node("N1", "Lee Hwy North Entry", NodeType.BOUNDARY, 2.0, 8.0);
         Node boundaryN2 = new Node("N2", "Washington Blvd North Entry", NodeType.BOUNDARY, 5.0, 8.0);
 
-        // 南部边界
+        // South boundary
         Node boundaryS1 = new Node("S1", "Columbia Pike South Entry", NodeType.BOUNDARY, 2.0, 0.0);
         Node boundaryS2 = new Node("S2", "Arlington Blvd South Entry", NodeType.BOUNDARY, 6.0, 0.0);
 
-        // 东部边界
+        // East boundary
         Node boundaryE1 = new Node("E1", "Key Bridge Entry", NodeType.BOUNDARY, 8.0, 6.0);
         Node boundaryE2 = new Node("E2", "Memorial Bridge Entry", NodeType.BOUNDARY, 8.0, 4.0);
 
-        // 西部边界
+        // West boundary
         Node boundaryW1 = new Node("W1", "Route 50 West Entry", NodeType.BOUNDARY, 0.0, 4.0);
         Node boundaryW2 = new Node("W2", "Lee Hwy West Entry", NodeType.BOUNDARY, 0.0, 6.0);
 
@@ -311,34 +311,34 @@ public class SimulationController {
         graph.addNode(boundaryW1);
         graph.addNode(boundaryW2);
 
-        // ==================== 主要路口节点 ====================
-        // Clarendon区域 (阿灵顿商业中心)
+        // ==================== Main Intersection Nodes ====================
+        // Clarendon area (Arlington commercial center)
         Node clarendon = new Node("1", "Clarendon Blvd & Wilson Blvd", NodeType.INTERSECTION, 4.0, 6.0);
 
-        // Courthouse区域
+        // Courthouse area
         Node courthouse = new Node("2", "Courthouse Rd & Wilson Blvd", NodeType.INTERSECTION, 5.5, 6.5);
 
-        // Ballston区域
+        // Ballston area
         Node ballston = new Node("3", "Fairfax Dr & Wilson Blvd", NodeType.INTERSECTION, 2.5, 6.5);
 
-        // Rosslyn区域 (靠近Key Bridge)
+        // Rosslyn area (near Key Bridge)
         Node rosslyn = new Node("4", "Fort Myer Dr & Wilson Blvd", NodeType.INTERSECTION, 6.5, 6.0);
 
-        // Pentagon City区域
+        // Pentagon City area
         Node pentagonCity = new Node("5", "Army Navy Dr & S Hayes St", NodeType.INTERSECTION, 6.0, 2.5);
 
-        // Crystal City区域
+        // Crystal City area
         Node crystalCity = new Node("6", "Crystal Dr & 15th St", NodeType.INTERSECTION, 7.0, 3.0);
 
-        // Columbia Pike主干道路口
+        // Columbia Pike main road intersection
         Node columbiaPike1 = new Node("7", "Columbia Pike & S Glebe Rd", NodeType.INTERSECTION, 3.0, 2.0);
         Node columbiaPike2 = new Node("8", "Columbia Pike & S Walter Reed Dr", NodeType.INTERSECTION, 4.5, 2.5);
 
-        // Arlington Blvd (Route 50)路口
+        // Arlington Blvd (Route 50) intersection
         Node route50_1 = new Node("9", "Arlington Blvd & N Courthouse Rd", NodeType.INTERSECTION, 5.0, 4.5);
         Node route50_2 = new Node("10", "Arlington Blvd & N Highland St", NodeType.INTERSECTION, 3.5, 4.0);
 
-        // Lee Highway路口
+        // Lee Highway intersection
         Node leeHwy1 = new Node("11", "Lee Hwy & N Fillmore St", NodeType.INTERSECTION, 2.0, 7.0);
         Node leeHwy2 = new Node("12", "Lee Hwy & N Lynn St", NodeType.INTERSECTION, 5.5, 7.5);
 
@@ -355,55 +355,55 @@ public class SimulationController {
         graph.addNode(leeHwy1);
         graph.addNode(leeHwy2);
 
-        // ==================== 创建道路（双向边） ====================
+        // ==================== Create Roads (Bidirectional Edges) ====================
 
-        // Wilson Blvd主干道 (东西向，穿过Clarendon, Courthouse, Rosslyn)
+        // Wilson Blvd main road (east-west, through Clarendon, Courthouse, Rosslyn)
         graph.addBidirectionalEdge("E1", "E2", ballston, clarendon, 1.8);
         graph.addBidirectionalEdge("E3", "E4", clarendon, courthouse, 1.5);
         graph.addBidirectionalEdge("E5", "E6", courthouse, rosslyn, 1.2);
 
-        // Lee Highway (东西向)
+        // Lee Highway (east-west)
         graph.addBidirectionalEdge("E7", "E8", leeHwy1, ballston, 0.8);
         graph.addBidirectionalEdge("E9", "E10", ballston, clarendon, 1.0);
         graph.addBidirectionalEdge("E11", "E12", courthouse, leeHwy2, 0.9);
 
-        // Arlington Blvd / Route 50 (东西向主干道)
+        // Arlington Blvd / Route 50 (east-west main road)
         graph.addBidirectionalEdge("E13", "E14", route50_2, route50_1, 1.6);
         graph.addBidirectionalEdge("E15", "E16", route50_1, rosslyn, 2.0);
 
-        // Columbia Pike (东南向主干道)
+        // Columbia Pike (southeast main road)
         graph.addBidirectionalEdge("E17", "E18", columbiaPike1, columbiaPike2, 1.8);
         graph.addBidirectionalEdge("E19", "E20", columbiaPike2, pentagonCity, 1.5);
 
-        // 南北向连接道路
+        // North-south connecting roads
         graph.addBidirectionalEdge("E21", "E22", clarendon, route50_1, 1.8);
         graph.addBidirectionalEdge("E23", "E24", route50_2, columbiaPike1, 2.2);
         graph.addBidirectionalEdge("E25", "E26", rosslyn, crystalCity, 3.5);
         graph.addBidirectionalEdge("E27", "E28", crystalCity, pentagonCity, 0.8);
         graph.addBidirectionalEdge("E29", "E30", pentagonCity, route50_1, 2.0);
 
-        // ==================== 边界节点连接 ====================
+        // ==================== Boundary Node Connections ====================
 
-        // 北部边界连接
+        // North boundary connections
         graph.addBidirectionalEdge("E31", "E32", boundaryN1, leeHwy1, 0.5);
         graph.addBidirectionalEdge("E33", "E34", boundaryN2, leeHwy2, 0.6);
         graph.addBidirectionalEdge("E35", "E36", boundaryW2, leeHwy1, 0.3);
 
-        // 南部边界连接
+        // South boundary connections
         graph.addBidirectionalEdge("E37", "E38", boundaryS1, columbiaPike1, 0.4);
         graph.addBidirectionalEdge("E39", "E40", boundaryS2, pentagonCity, 0.5);
 
-        // 东部边界连接 (通往DC)
+        // East boundary connections (to DC)
         graph.addBidirectionalEdge("E41", "E42", boundaryE1, rosslyn, 0.8);
         graph.addBidirectionalEdge("E43", "E44", boundaryE2, crystalCity, 1.0);
 
-        // 西部边界连接
+        // West boundary connections
         graph.addBidirectionalEdge("E45", "E46", boundaryW1, route50_2, 0.5);
         graph.addBidirectionalEdge("E47", "E48", boundaryW2, leeHwy1, 0.3);
 
         System.out.println("===========================================");
-        System.out.println("已加载阿灵顿地区道路网络");
-        System.out.println("主要区域: Clarendon, Courthouse, Ballston, Rosslyn");
+        System.out.println("Arlington area road network loaded");
+        System.out.println("Main areas: Clarendon, Courthouse, Ballston, Rosslyn");
         System.out.println("        Pentagon City, Crystal City, Columbia Pike");
         graph.printStatistics();
         System.out.println("===========================================");
@@ -412,7 +412,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取图的基本信息
+     * Get basic graph information
      */
     private Map<String, Object> getGraphInfo(Graph graph) {
         Map<String, Object> info = new HashMap<>();

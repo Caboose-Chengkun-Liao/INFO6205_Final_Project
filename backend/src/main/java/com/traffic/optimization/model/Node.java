@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 节点类 - 代表十字路口/交叉点
+ * Node class - represents an intersection/junction
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -17,47 +17,47 @@ import java.util.List;
 @JsonIgnoreProperties({"trafficLight", "incomingEdges", "outgoingEdges"})
 public class Node {
     /**
-     * 节点ID（唯一标识符）
+     * Node ID (unique identifier)
      */
     private String id;
 
     /**
-     * 节点名称
+     * Node name
      */
     private String name;
 
     /**
-     * 节点类型（路口或边界）
+     * Node type (intersection or boundary)
      */
     private NodeType type;
 
     /**
-     * X坐标（用于可视化）
+     * X coordinate (for visualization)
      */
     private double x;
 
     /**
-     * Y坐标（用于可视化）
+     * Y coordinate (for visualization)
      */
     private double y;
 
     /**
-     * 出边列表（从该节点出发的道路）
+     * Outgoing edge list (roads departing from this node)
      */
     private List<Edge> outgoingEdges;
 
     /**
-     * 入边列表（到达该节点的道路）
+     * Incoming edge list (roads arriving at this node)
      */
     private List<Edge> incomingEdges;
 
     /**
-     * 信号灯控制器（仅用于路口节点）
+     * Traffic light controller (only for intersection nodes)
      */
     private TrafficLight trafficLight;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public Node(String id, String name, NodeType type, double x, double y) {
         this.id = id;
@@ -68,28 +68,28 @@ public class Node {
         this.outgoingEdges = new ArrayList<>();
         this.incomingEdges = new ArrayList<>();
 
-        // 如果是路口节点，初始化信号灯
+        // If intersection node, initialize traffic light
         if (type == NodeType.INTERSECTION) {
             this.trafficLight = new TrafficLight(id);
         }
     }
 
     /**
-     * 添加出边
+     * Add outgoing edge
      */
     public void addOutgoingEdge(Edge edge) {
         this.outgoingEdges.add(edge);
     }
 
     /**
-     * 添加入边
+     * Add incoming edge
      */
     public void addIncomingEdge(Edge edge) {
         this.incomingEdges.add(edge);
     }
 
     /**
-     * 获取到指定节点的边
+     * Get edge to target node
      */
     public Edge getEdgeTo(Node targetNode) {
         for (Edge edge : outgoingEdges) {

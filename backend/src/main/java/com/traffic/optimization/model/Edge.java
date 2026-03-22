@@ -8,7 +8,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 /**
- * 边类 - 代表道路
+ * Edge class - represents a road
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -17,54 +17,54 @@ import java.util.Queue;
 @JsonIgnoreProperties({"vehicleQueue"})
 public class Edge {
     /**
-     * 边ID
+     * Edge ID
      */
     private String id;
 
     /**
-     * 起点节点
+     * Source node
      */
     private Node fromNode;
 
     /**
-     * 终点节点
+     * Destination node
      */
     private Node toNode;
 
     /**
-     * 道路距离（公里）
+     * Road distance (km)
      */
     private double distance;
 
     /**
-     * 道路容量（车辆数/公里）
+     * Road capacity (vehicles/km)
      */
     private double capacityPerKm;
 
     /**
-     * 速度限制（公里/小时）
+     * Speed limit (km/h)
      */
     private double speedLimit;
 
     /**
-     * 当前道路上的车辆队列
+     * Vehicle queue on the current road
      */
     private Queue<TrafficFlow> vehicleQueue;
 
     /**
-     * 当前道路上的车辆数量
+     * Current number of vehicles on the road
      */
     private int currentVehicleCount;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public Edge(String id, Node fromNode, Node toNode, double distance) {
         this(id, fromNode, toNode, distance, 50.0, 60.0);
     }
 
     /**
-     * 完整构造函数
+     * Full constructor
      */
     public Edge(String id, Node fromNode, Node toNode, double distance,
                 double capacityPerKm, double speedLimit) {
@@ -79,73 +79,73 @@ public class Edge {
     }
 
     /**
-     * 获取总容量
+     * Get total capacity
      */
     public double getTotalCapacity() {
         return capacityPerKm * distance;
     }
 
     /**
-     * 检查是否已满
+     * Check if road is full
      */
     public boolean isFull() {
         return currentVehicleCount >= getTotalCapacity();
     }
 
     /**
-     * 获取当前占用率
+     * Get current occupancy rate
      */
     public double getOccupancyRate() {
         return (double) currentVehicleCount / getTotalCapacity();
     }
 
     /**
-     * 获取实际速度（考虑拥堵影响）
-     * 根据道路占用率动态调整速度
+     * Get actual speed (considering congestion effect)
+     * Dynamically adjusts speed based on road occupancy rate
      */
     public double getActualSpeed() {
         double occupancyRate = getOccupancyRate();
 
         if (occupancyRate >= 0.9) {
-            // 严重拥堵：速度降至30%
+            // Severe congestion: speed reduced to 30%
             return speedLimit * 0.3;
         } else if (occupancyRate >= 0.75) {
-            // 高拥堵：速度降至50%
+            // High congestion: speed reduced to 50%
             return speedLimit * 0.5;
         } else if (occupancyRate >= 0.5) {
-            // 中等拥堵：速度降至75%
+            // Moderate congestion: speed reduced to 75%
             return speedLimit * 0.75;
         } else if (occupancyRate >= 0.25) {
-            // 轻微拥堵：速度降至90%
+            // Light congestion: speed reduced to 90%
             return speedLimit * 0.9;
         }
 
-        // 畅通：正常速度
+        // Clear: normal speed
         return speedLimit;
     }
 
     /**
-     * 计算理想通行时间（分钟）- 不考虑拥堵
-     * 增加2倍让车辆移动更慢，更容易观察
+     * Calculate ideal travel time (minutes) - without congestion
+     * Multiplied by 2 to slow vehicle movement for easier observation
      */
     public double getIdealTravelTime() {
         return (distance / speedLimit) * 60 * 2;
     }
 
     /**
-     * 计算实际通行时间（分钟）- 考虑拥堵影响
-     * 增加2倍让车辆移动更慢，更容易观察
+     * Calculate actual travel time (minutes) - with congestion effect
+     * Multiplied by 2 to slow vehicle movement for easier observation
      */
     public double getActualTravelTime() {
         double actualSpeed = getActualSpeed();
         if (actualSpeed == 0) {
-            return Double.MAX_VALUE; // 避免除零
+            return Double.MAX_VALUE; // avoid division by zero
         }
         return (distance / actualSpeed) * 60 * 2;
     }
 
     /**
-     * 添加车辆到道路
+     * Add vehicle to road
      */
     public boolean addVehicle(TrafficFlow flow) {
         if (isFull()) {
@@ -157,7 +157,7 @@ public class Edge {
     }
 
     /**
-     * 移除车辆从道路
+     * Remove vehicle from road
      */
     public TrafficFlow removeVehicle() {
         TrafficFlow flow = vehicleQueue.poll();

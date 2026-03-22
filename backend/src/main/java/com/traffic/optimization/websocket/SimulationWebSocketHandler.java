@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * WebSocket处理器 - 定期推送仿真数据到前端
+ * WebSocket handler - periodically pushes simulation data to the frontend
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -35,7 +35,7 @@ public class SimulationWebSocketHandler {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 定期推送仿真状态（每秒）
+     * Periodically push simulation state (every second)
      */
     @Scheduled(fixedRate = 1000)
     public void broadcastSimulationState() {
@@ -44,7 +44,7 @@ public class SimulationWebSocketHandler {
         }
 
         try {
-            // 执行仿真步进
+            // Execute simulation step
             simulationEngine.step();
 
             Map<String, Object> data = new HashMap<>();
@@ -57,12 +57,12 @@ public class SimulationWebSocketHandler {
 
             messagingTemplate.convertAndSend("/topic/simulation", data);
         } catch (Exception e) {
-            System.err.println("WebSocket广播错误: " + e.getMessage());
+            System.err.println("WebSocket broadcast error: " + e.getMessage());
         }
     }
 
     /**
-     * 推送性能指标（每5秒）
+     * Push performance metrics (every 5 seconds)
      */
     @Scheduled(fixedRate = 5000)
     public void broadcastMetrics() {
@@ -74,7 +74,7 @@ public class SimulationWebSocketHandler {
             EfficiencyCalculator.PerformanceMetrics metrics = simulationEngine.getCurrentMetrics();
             messagingTemplate.convertAndSend("/topic/metrics", metrics);
         } catch (Exception e) {
-            System.err.println("指标推送错误: " + e.getMessage());
+            System.err.println("Metrics push error: " + e.getMessage());
         }
     }
 }

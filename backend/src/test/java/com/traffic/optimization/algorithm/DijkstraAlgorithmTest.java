@@ -9,7 +9,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Dijkstra算法单元测试
+ * Dijkstra algorithm unit tests
  */
 class DijkstraAlgorithmTest {
 
@@ -20,7 +20,7 @@ class DijkstraAlgorithmTest {
     void setUp() {
         graph = new Graph();
 
-        // 创建节点
+        // Create nodes
         nodeA = new Node("A", "Node A", NodeType.BOUNDARY, 0, 0);
         nodeB = new Node("B", "Node B", NodeType.INTERSECTION, 1, 0);
         nodeC = new Node("C", "Node C", NodeType.INTERSECTION, 1, 1);
@@ -31,7 +31,7 @@ class DijkstraAlgorithmTest {
         graph.addNode(nodeC);
         graph.addNode(nodeD);
 
-        // 创建边: A -> B (5km), B -> C (3km), C -> D (2km), A -> C (10km)
+        // Create edges: A -> B (5km), B -> C (3km), C -> D (2km), A -> C (10km)
         graph.addEdge(new Edge("AB", nodeA, nodeB, 5.0));
         graph.addEdge(new Edge("BC", nodeB, nodeC, 3.0));
         graph.addEdge(new Edge("CD", nodeC, nodeD, 2.0));

@@ -18,8 +18,8 @@ const MapVisualization = () => {
   const containerRef = useRef(null);
 
   // Canvas dimensions - optimized for web display
-  const svgWidth = 1600;  // 适配标准宽屏显示器
-  const svgHeight = 800;  // 减小高度以完全展示
+  const svgWidth = 1600;  // optimized for standard widescreen displays
+  const svgHeight = 800;  // reduced height for full content display
   const padding = 60;
 
   useEffect(() => {
@@ -43,10 +43,10 @@ const MapVisualization = () => {
       }
     });
 
-    // 定期重新加载graph数据以获取实时的道路负载
+    // Periodically reload graph data to get real-time road load
     const graphRefreshInterval = setInterval(() => {
-      loadGraphData(false); // 后台刷新，不显示loading
-    }, 3000); // 每3秒更新一次
+      loadGraphData(false); // background refresh, no loading indicator
+    }, 3000); // update every 3 seconds
 
     return () => {
       unsubscribe && unsubscribe();
@@ -127,7 +127,7 @@ const MapVisualization = () => {
     }
   };
 
-  // 地图固定 - 移除拖拽和缩放功能
+  // Map fixed - drag and zoom removed
 
   // Calculate edge statistics
   const getEdgeStats = (edge) => {
@@ -595,11 +595,11 @@ const styles = {
     position: 'relative',
     padding: '24px',
     background: '#F8FAFC',
-    minHeight: '850px',  // 适配800px的SVG高度 + padding
+    minHeight: '850px',  // accommodates 800px SVG height + padding
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'visible'  // 改为visible以完全展示内容
+    overflow: 'visible'  // changed to visible to fully display content
   },
   svg: {
     background: 'white',

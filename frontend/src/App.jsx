@@ -16,15 +16,15 @@ function App() {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // 连接WebSocket
+    // Connect WebSocket
     websocketService.connect(
       () => {
-        console.log('WebSocket已连接');
+        console.log('WebSocket connected');
         setConnected(true);
 
-        // 订阅仿真状态更新
+        // Subscribe to simulation state updates
         websocketService.subscribe('/topic/simulation', (data) => {
-          console.log('收到仿真数据:', data);
+          console.log('Received simulation data:', data);
           if (data.state) {
             setSimulationState(data.state);
           }
@@ -36,25 +36,25 @@ function App() {
           }
         });
 
-        // 订阅性能指标更新
+        // Subscribe to performance metrics updates
         websocketService.subscribe('/topic/metrics', (data) => {
-          console.log('收到指标数据:', data);
+          console.log('Received metrics data:', data);
           setMetrics(data);
         });
       },
       (error) => {
-        console.error('WebSocket连接失败:', error);
+        console.error('WebSocket connection failed:', error);
         setConnected(false);
       }
     );
 
-    // 定期获取效率趋势数据
+    // Periodically fetch efficiency trend data
     const intervalId = setInterval(async () => {
       try {
         const response = await simulationAPI.getEfficiencyTrend(50);
         setEfficiencyTrend(response.data);
       } catch (error) {
-        console.error('获取效率趋势失败:', error);
+        console.error('Failed to fetch efficiency trend:', error);
       }
     }, 5000);
 
@@ -71,10 +71,10 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>交通信号优化系统</h1>
+        <h1>Traffic Signal Optimization System</h1>
         <div className="connection-status">
           <span className={`status-dot ${connected ? 'connected' : 'disconnected'}`}></span>
-          <span>{connected ? '已连接' : '未连接'}</span>
+          <span>{connected ? 'Connected' : 'Disconnected'}</span>
         </div>
       </header>
 
@@ -105,8 +105,8 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>交通信号优化系统 - INFO6205 Final Project</p>
-        <p>作者: Chengkun Liao, Mingjie Shen</p>
+        <p>Traffic Signal Optimization System - INFO6205 Final Project</p>
+        <p>Authors: Chengkun Liao, Mingjie Shen</p>
       </footer>
     </div>
   );

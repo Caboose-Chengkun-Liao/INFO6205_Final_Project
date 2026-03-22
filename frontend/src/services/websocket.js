@@ -12,19 +12,19 @@ class WebSocketService {
     const socket = new SockJS('http://localhost:8080/ws');
     this.stompClient = Stomp.over(socket);
 
-    // 禁用调试日志
+    // Disable debug logging
     this.stompClient.debug = () => {};
 
     this.stompClient.connect(
       {},
       (frame) => {
         this.connected = true;
-        console.log('WebSocket连接成功:', frame);
+        console.log('WebSocket connected:', frame);
         if (onConnect) onConnect();
       },
       (error) => {
         this.connected = false;
-        console.error('WebSocket连接失败:', error);
+        console.error('WebSocket connection failed:', error);
         if (onError) onError(error);
       }
     );
@@ -34,14 +34,14 @@ class WebSocketService {
     if (this.stompClient && this.connected) {
       this.stompClient.disconnect(() => {
         this.connected = false;
-        console.log('WebSocket已断开');
+        console.log('WebSocket disconnected');
       });
     }
   }
 
   subscribe(topic, callback) {
     if (!this.connected) {
-      console.error('WebSocket未连接');
+      console.error('WebSocket not connected');
       return null;
     }
 

@@ -50,7 +50,7 @@ const DataExportPanel = () => {
 
   const handleExport = async (dataType, format) => {
     setIsExporting(true);
-    setExportStatus({ type: 'info', message: `正在导出 ${dataType}...` });
+    setExportStatus({ type: 'info', message: `Exporting ${dataType}...` });
 
     try {
       let data;
@@ -112,7 +112,7 @@ const DataExportPanel = () => {
 
       setExportStatus({
         type: 'success',
-        message: `✅ 成功导出 ${filename}.${extension}`
+        message: `✅ Successfully exported ${filename}.${extension}`
       });
 
       setTimeout(() => setExportStatus(null), 3000);
@@ -120,7 +120,7 @@ const DataExportPanel = () => {
       console.error('Export failed:', error);
       setExportStatus({
         type: 'error',
-        message: `❌ 导出失败: ${error.message}`
+        message: `❌ Export failed: ${error.message}`
       });
 
       setTimeout(() => setExportStatus(null), 5000);
@@ -171,7 +171,7 @@ const DataExportPanel = () => {
 
   const handleExportAll = async () => {
     setIsExporting(true);
-    setExportStatus({ type: 'info', message: '正在导出全部数据...' });
+    setExportStatus({ type: 'info', message: 'Exporting all data...' });
 
     try {
       const timestamp = Date.now();
@@ -198,14 +198,14 @@ const DataExportPanel = () => {
 
       setExportStatus({
         type: 'success',
-        message: '✅ 成功导出全部数据'
+        message: '✅ Successfully exported all data'
       });
 
       setTimeout(() => setExportStatus(null), 3000);
     } catch (error) {
       setExportStatus({
         type: 'error',
-        message: `❌ 导出失败: ${error.message}`
+        message: `❌ Export failed: ${error.message}`
       });
 
       setTimeout(() => setExportStatus(null), 5000);
@@ -292,7 +292,7 @@ const DataExportPanel = () => {
                 opacity: isExporting ? 0.6 : 1
               }}
             >
-              {isExporting ? '导出中...' : '📦 导出全部数据 (JSON)'}
+              {isExporting ? 'Exporting...' : '📦 Export All Data (JSON)'}
             </button>
           </div>
 
@@ -300,7 +300,7 @@ const DataExportPanel = () => {
           <div style={styles.infoBox}>
             <div style={styles.infoIcon}>💡</div>
             <div style={styles.infoText}>
-              CSV格式适合Excel分析，JSON格式保留完整数据结构
+              CSV format is suitable for Excel analysis; JSON format preserves the complete data structure
             </div>
           </div>
         </div>

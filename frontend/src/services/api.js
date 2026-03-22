@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 export const simulationAPI = {
-  // 仿真控制
+  // Simulation control
   initialize: () => api.post('/simulation/initialize'),
   start: () => api.post('/simulation/start'),
   pause: () => api.post('/simulation/pause'),
@@ -19,17 +19,17 @@ export const simulationAPI = {
   reset: () => api.post('/simulation/reset'),
   step: () => api.post('/simulation/step'),
 
-  // 获取状态
+  // Get status
   getStatus: () => api.get('/simulation/status'),
   getMetrics: () => api.get('/simulation/metrics'),
   getEfficiencyTrend: (count = 50) => api.get(`/simulation/efficiency/trend?count=${count}`),
   getGraph: () => api.get('/simulation/graph'),
   getVehicles: () => api.get('/simulation/vehicles'),
 
-  // 交通流管理
+  // Traffic flow management
   createFlow: (flowRequest) => api.post('/simulation/flows', flowRequest),
 
-  // 信号灯控制
+  // Signal control
   getSignals: () => api.get('/simulation/signals'),
   setSignalMode: (mode) => api.post(`/simulation/signals/mode?mode=${mode}`),
 };

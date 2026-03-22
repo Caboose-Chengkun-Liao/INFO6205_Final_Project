@@ -3,49 +3,49 @@ package com.traffic.optimization.model;
 import lombok.Data;
 
 /**
- * 交通信号灯类
+ * Traffic light class
  *
  * @author Chengkun Liao, Mingjie Shen
  */
 @Data
 public class TrafficLight {
     /**
-     * 信号灯ID（对应节点ID）
+     * Traffic light ID (corresponds to node ID)
      */
     private String id;
 
     /**
-     * 当前信号方向（东西/南北）
+     * Current signal direction (east-west / north-south)
      */
     private SignalDirection currentDirection;
 
     /**
-     * 当前信号状态（红灯/绿灯/黄灯）
+     * Current signal state (red / green / yellow)
      */
     private SignalState currentState;
 
     /**
-     * 绿灯时长（秒）
+     * Green light duration (seconds)
      */
     private int greenDuration;
 
     /**
-     * 黄灯时长（秒）
+     * Yellow light duration (seconds)
      */
     private int yellowDuration;
 
     /**
-     * 红灯时长（秒）
+     * Red light duration (seconds)
      */
     private int redDuration;
 
     /**
-     * 当前状态剩余时间（秒）
+     * Remaining time for current state (seconds)
      */
     private int remainingTime;
 
     /**
-     * 构造函数 - 默认配置
+     * Constructor - default configuration
      */
     public TrafficLight(String id) {
         this.id = id;
@@ -53,12 +53,12 @@ public class TrafficLight {
         this.currentState = SignalState.GREEN;
         this.greenDuration = 30;
         this.yellowDuration = 3;
-        this.redDuration = 33; // 另一方向的绿灯+黄灯时间
+        this.redDuration = 33; // green + yellow time for the other direction
         this.remainingTime = greenDuration;
     }
 
     /**
-     * 更新信号灯状态（每秒调用）
+     * Update traffic light state (called each second)
      */
     public void update() {
         remainingTime--;
@@ -69,7 +69,7 @@ public class TrafficLight {
     }
 
     /**
-     * 切换信号状态
+     * Switch signal state
      */
     private void switchState() {
         switch (currentState) {
@@ -80,7 +80,7 @@ public class TrafficLight {
             case YELLOW:
                 currentState = SignalState.RED;
                 remainingTime = redDuration;
-                // 切换方向
+                // switch direction
                 currentDirection = (currentDirection == SignalDirection.EAST_WEST)
                     ? SignalDirection.NORTH_SOUTH
                     : SignalDirection.EAST_WEST;
@@ -93,35 +93,35 @@ public class TrafficLight {
     }
 
     /**
-     * 检查指定方向是否可以通行
+     * Check if the specified direction can pass
      */
     public boolean canPass(SignalDirection direction) {
         return currentDirection == direction && currentState == SignalState.GREEN;
     }
 
     /**
-     * 调整绿灯时长（用于优化）
+     * Adjust green light duration (for optimization)
      */
     public void adjustGreenDuration(int newDuration) {
-        this.greenDuration = Math.max(10, Math.min(60, newDuration)); // 限制在10-60秒
+        this.greenDuration = Math.max(10, Math.min(60, newDuration)); // limit to 10-60 seconds
         this.redDuration = greenDuration + yellowDuration;
     }
 
     /**
-     * 信号方向枚举
+     * Signal direction enumeration
      */
     public enum SignalDirection {
-        EAST_WEST,  // 东西方向
-        NORTH_SOUTH // 南北方向
+        EAST_WEST,  // east-west direction
+        NORTH_SOUTH // north-south direction
     }
 
     /**
-     * 信号状态枚举
+     * Signal state enumeration
      */
     public enum SignalState {
-        RED,    // 红灯
-        YELLOW, // 黄灯
-        GREEN   // 绿灯
+        RED,    // red light
+        YELLOW, // yellow light
+        GREEN   // green light
     }
 
     @Override

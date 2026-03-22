@@ -7,14 +7,14 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 /**
- * 效率计算器 - 计算交通系统的效率指标
+ * Efficiency calculator - calculates traffic system efficiency metrics
  *
- * 效率公式: E = Σ(Ni × Li / ti) / Σ(Ni)
- * 其中:
- *   E: 效率值
- *   Ni: 流i中的车辆数量
- *   Li: 道路长度
- *   ti: 流通过两个路口的时间
+ * Efficiency formula: E = Σ(Ni × Li / ti) / Σ(Ni)
+ * Where:
+ *   E: efficiency value
+ *   Ni: number of vehicles in flow i
+ *   Li: road length
+ *   ti: time for flow to pass between two intersections
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -23,22 +23,22 @@ import java.util.*;
 public class EfficiencyCalculator {
 
     /**
-     * 效率历史记录
+     * Efficiency history records
      */
     private List<EfficiencyRecord> efficiencyHistory;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public EfficiencyCalculator() {
         this.efficiencyHistory = new ArrayList<>();
     }
 
     /**
-     * 计算当前系统效率
+     * Calculate current system efficiency
      *
-     * @param completedFlows 已完成的交通流列表
-     * @return 效率值
+     * @param completedFlows list of completed traffic flows
+     * @return efficiency value
      */
     public double calculateEfficiency(List<TrafficFlow> completedFlows) {
         if (completedFlows == null || completedFlows.isEmpty()) {
@@ -51,7 +51,7 @@ public class EfficiencyCalculator {
         for (TrafficFlow flow : completedFlows) {
             int Ni = flow.getNumberOfCars();
             double Li = flow.getTotalDistance();
-            double ti = flow.getTravelTimeCounter() / 3600.0; // 转换为小时
+            double ti = flow.getTravelTimeCounter() / 3600.0; // convert to hours
 
             if (ti > 0) {
                 numeratorSum += (Ni * Li / ti);
@@ -63,7 +63,7 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 计算系统总吞吐量（完成的车辆数）
+     * Calculate total system throughput (completed vehicles)
      */
     public int calculateThroughput(List<TrafficFlow> completedFlows) {
         int totalCars = 0;
@@ -74,7 +74,7 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 计算平均旅行时间
+     * Calculate average travel time
      */
     public double calculateAverageTravelTime(List<TrafficFlow> completedFlows) {
         if (completedFlows == null || completedFlows.isEmpty()) {
@@ -93,7 +93,7 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 计算平均速度
+     * Calculate average speed
      */
     public double calculateAverageSpeed(List<TrafficFlow> completedFlows) {
         if (completedFlows == null || completedFlows.isEmpty()) {
@@ -115,7 +115,7 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 计算综合性能指标
+     * Calculate comprehensive performance metrics
      */
     public PerformanceMetrics calculatePerformanceMetrics(
             List<TrafficFlow> activeFlows,
@@ -140,20 +140,20 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 记录效率
+     * Record efficiency
      */
     public void recordEfficiency(double efficiency, long timestamp) {
         EfficiencyRecord record = new EfficiencyRecord(timestamp, efficiency);
         efficiencyHistory.add(record);
 
-        // 只保留最近1000条记录
+        // Keep only the most recent 1000 records
         if (efficiencyHistory.size() > 1000) {
             efficiencyHistory.remove(0);
         }
     }
 
     /**
-     * 获取效率趋势（最近N条记录）
+     * Get efficiency trend (most recent N records)
      */
     public List<EfficiencyRecord> getEfficiencyTrend(int count) {
         int size = efficiencyHistory.size();
@@ -162,7 +162,7 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 获取平均效率（最近N条记录）
+     * Get average efficiency (most recent N records)
      */
     public double getAverageEfficiency(int count) {
         List<EfficiencyRecord> trend = getEfficiencyTrend(count);
@@ -179,24 +179,24 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 清空历史记录
+     * Clear history records
      */
     public void clearHistory() {
         efficiencyHistory.clear();
     }
 
     /**
-     * 性能指标类
+     * Performance metrics class
      */
     @Getter
     public static class PerformanceMetrics {
-        private double efficiency;           // 效率值
-        private int throughput;              // 吞吐量（完成的车辆数）
-        private double avgTravelTime;        // 平均旅行时间（秒）
-        private double avgSpeed;             // 平均速度（km/h）
-        private int activeFlowCount;         // 活跃流数量
-        private int completedFlowCount;      // 已完成流数量
-        private long timestamp;              // 时间戳
+        private double efficiency;           // efficiency value
+        private int throughput;              // throughput (completed vehicles)
+        private double avgTravelTime;        // average travel time (seconds)
+        private double avgSpeed;             // average speed (km/h)
+        private int activeFlowCount;         // active flow count
+        private int completedFlowCount;      // completed flow count
+        private long timestamp;              // timestamp
 
         public PerformanceMetrics(double efficiency, int throughput,
                                 double avgTravelTime, double avgSpeed,
@@ -213,14 +213,14 @@ public class EfficiencyCalculator {
         @Override
         public String toString() {
             return String.format(
-                "效率: %.2f | 吞吐量: %d | 平均时间: %.1fs | 平均速度: %.1fkm/h | 活跃: %d | 完成: %d",
+                "Efficiency: %.2f | Throughput: %d | Avg Time: %.1fs | Avg Speed: %.1fkm/h | Active: %d | Completed: %d",
                 efficiency, throughput, avgTravelTime, avgSpeed, activeFlowCount, completedFlowCount
             );
         }
     }
 
     /**
-     * 效率记录类
+     * Efficiency record class
      */
     @Getter
     public static class EfficiencyRecord {

@@ -7,7 +7,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
   const [currentTime, setCurrentTime] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // 使用从WebSocket接收的数据更新本地状态
+  // Update local state with data received from WebSocket
   useEffect(() => {
     if (propSimulationState) {
       setState(propSimulationState);
@@ -35,8 +35,8 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setState('INITIALIZED');
       if (onStateChange) onStateChange('INITIALIZED');
     } catch (error) {
-      console.error('初始化失败:', error);
-      alert('初始化失败: ' + (error.response?.data?.error || error.message));
+      console.error('Initialization failed:', error);
+      alert('Initialization failed: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setState('RUNNING');
       if (onStateChange) onStateChange('RUNNING');
     } catch (error) {
-      console.error('启动失败:', error);
+      console.error('Start failed:', error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setState('PAUSED');
       if (onStateChange) onStateChange('PAUSED');
     } catch (error) {
-      console.error('暂停失败:', error);
+      console.error('Pause failed:', error);
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setCurrentTime(0);
       if (onStateChange) onStateChange('STOPPED');
     } catch (error) {
-      console.error('停止失败:', error);
+      console.error('Stop failed:', error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setCurrentTime(0);
       if (onStateChange) onStateChange('INITIALIZED');
     } catch (error) {
-      console.error('重置失败:', error);
+      console.error('Reset failed:', error);
     } finally {
       setLoading(false);
     }
@@ -98,15 +98,15 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
 
   return (
     <div className="control-panel">
-      <h2>仿真控制面板</h2>
+      <h2>Simulation Control Panel</h2>
 
       <div className="status-display">
         <div className="status-item">
-          <span className="label">状态:</span>
+          <span className="label">Status:</span>
           <span className={`value state-${state.toLowerCase()}`}>{state}</span>
         </div>
         <div className="status-item">
-          <span className="label">仿真时间:</span>
+          <span className="label">Simulation Time:</span>
           <span className="value">{formatTime(currentTime)}</span>
         </div>
       </div>
@@ -117,7 +117,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state !== 'STOPPED'}
           className="btn btn-primary"
         >
-          初始化
+          Initialize
         </button>
 
         <button
@@ -125,7 +125,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state === 'RUNNING' || state === 'STOPPED'}
           className="btn btn-success"
         >
-          启动
+          Start
         </button>
 
         <button
@@ -133,7 +133,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state !== 'RUNNING'}
           className="btn btn-warning"
         >
-          暂停
+          Pause
         </button>
 
         <button
@@ -141,7 +141,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state === 'STOPPED'}
           className="btn btn-danger"
         >
-          停止
+          Stop
         </button>
 
         <button
@@ -149,7 +149,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state === 'STOPPED'}
           className="btn btn-secondary"
         >
-          重置
+          Reset
         </button>
       </div>
     </div>

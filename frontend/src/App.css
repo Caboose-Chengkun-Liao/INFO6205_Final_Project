@@ -75,7 +75,7 @@ body {
 .app-main {
   flex: 1;
   padding: 30px 40px;
-  max-width: 100%;  /* 使用整个页面宽度 */
+  max-width: 100%;  /* use full page width */
   width: 100%;
   margin: 0 auto;
   display: grid;

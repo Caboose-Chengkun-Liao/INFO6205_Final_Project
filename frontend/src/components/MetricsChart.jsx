@@ -5,7 +5,7 @@ import './MetricsChart.css';
 const MetricsChart = ({ data }) => {
   return (
     <div className="metrics-chart">
-      <h2>效率趋势图</h2>
+      <h2>Efficiency Trend</h2>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -25,7 +25,7 @@ const MetricsChart = ({ data }) => {
             type="monotone"
             dataKey="efficiency"
             stroke="#8884d8"
-            name="效率值"
+            name="Efficiency"
             strokeWidth={2}
           />
         </LineChart>

@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 交通流类 - 代表一组从入口到目的地的车辆
+ * Traffic flow class - represents a group of vehicles traveling from entry to destination
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -16,72 +16,72 @@ import java.util.List;
 @JsonIgnoreProperties({"path"})
 public class TrafficFlow {
     /**
-     * 流ID（唯一标识符）
+     * Flow ID (unique identifier)
      */
     private String flowId;
 
     /**
-     * 入口节点
+     * Entry node
      */
     private Node entryPoint;
 
     /**
-     * 目的地节点
+     * Destination node
      */
     private Node destination;
 
     /**
-     * 车辆数量
+     * Number of vehicles
      */
     private int numberOfCars;
 
     /**
-     * 旅行时间计数器（秒）
+     * Travel time counter (seconds)
      */
     private double travelTimeCounter;
 
     /**
-     * 路径（节点序列）
+     * Path (sequence of nodes)
      */
     private List<Node> path;
 
     /**
-     * 当前路径索引
+     * Current path index
      */
     private int currentPathIndex;
 
     /**
-     * 当前所在的边
+     * Current edge
      */
     private Edge currentEdge;
 
     /**
-     * 在当前边上已行驶的时间（秒）
+     * Time spent on current edge (seconds)
      */
     private double timeOnCurrentEdge;
 
     /**
-     * 流状态
+     * Flow state
      */
     private FlowState state;
 
     /**
-     * 已完成的车辆数量
+     * Number of completed vehicles
      */
     private int completedCars;
 
     /**
-     * 总行驶距离
+     * Total travel distance
      */
     private double totalDistance;
 
     /**
-     * 创建时间（模拟时间）
+     * Creation time (simulation time)
      */
     private long createdAt;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public TrafficFlow(String flowId, Node entryPoint, Node destination, int numberOfCars) {
         this.flowId = flowId;
@@ -98,7 +98,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 设置路径
+     * Set path
      */
     public void setPath(List<Node> path) {
         this.path = path;
@@ -108,7 +108,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 计算路径总距离
+     * Calculate total path distance
      */
     private double calculatePathDistance() {
         double distance = 0;
@@ -124,7 +124,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 获取当前节点
+     * Get current node
      */
     public Node getCurrentNode() {
         if (path == null || currentPathIndex >= path.size()) {
@@ -134,7 +134,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 获取下一个节点
+     * Get next node
      */
     public Node getNextNode() {
         if (path == null || currentPathIndex + 1 >= path.size()) {
@@ -144,7 +144,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 移动到下一个节点
+     * Move to next node
      */
     public boolean moveToNextNode() {
         if (hasReachedDestination()) {
@@ -164,33 +164,33 @@ public class TrafficFlow {
     }
 
     /**
-     * 检查是否到达目的地
+     * Check if destination has been reached
      */
     public boolean hasReachedDestination() {
         return currentPathIndex >= path.size() - 1;
     }
 
     /**
-     * 检查是否完成
+     * Check if flow is completed
      */
     public boolean isCompleted() {
         return state == FlowState.COMPLETED;
     }
 
     /**
-     * 获取平均速度（km/h）
+     * Get average speed (km/h)
      */
     public double getAverageSpeed() {
         if (travelTimeCounter == 0) {
             return 0;
         }
-        // 距离 / (时间/3600)
+        // distance / (time/3600)
         double travelTimeHours = travelTimeCounter / 3600.0;
         return totalDistance / travelTimeHours;
     }
 
     /**
-     * 获取效率指标（用于计算E值）
+     * Get efficiency metric (used to calculate E value)
      * E_i = Ni × Li / ti
      */
     public double getEfficiencyMetric() {
@@ -201,7 +201,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 更新旅行时间（每秒调用）
+     * Update travel time (called each second)
      */
     public void updateTravelTime(double deltaTime) {
         if (state == FlowState.ACTIVE || state == FlowState.BLOCKED) {
@@ -211,13 +211,13 @@ public class TrafficFlow {
     }
 
     /**
-     * 流状态枚举
+     * Flow state enumeration
      */
     public enum FlowState {
-        WAITING,    // 等待进入网络
-        ACTIVE,     // 在网络中移动
-        BLOCKED,    // 被阻塞（道路满或红灯）
-        COMPLETED   // 已完成
+        WAITING,    // waiting to enter the network
+        ACTIVE,     // moving in the network
+        BLOCKED,    // blocked (road full or red light)
+        COMPLETED   // completed
     }
 
     @Override

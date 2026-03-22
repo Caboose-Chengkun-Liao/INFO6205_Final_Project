@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 /**
- * 仿真引擎 - 负责整个交通系统的时间步进仿真
+ * Simulation engine - responsible for the time-step simulation of the entire traffic system
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -26,78 +26,78 @@ public class SimulationEngine {
     private EfficiencyCalculator efficiencyCalculator;
 
     /**
-     * 道路网络图
+     * Road network graph
      */
     private Graph graph;
 
     /**
-     * 仿真状态
+     * Simulation state
      */
     private SimulationState state;
 
     /**
-     * 当前仿真时间（秒）
+     * Current simulation time (seconds)
      */
     private long currentTime;
 
     /**
-     * 时间步长（秒）
+     * Time step (seconds)
      */
     private double timeStep;
 
     /**
-     * 仿真速度倍率
+     * Simulation speed multiplier
      */
     private double speedMultiplier;
 
     /**
-     * 效率评估间隔（秒）
+     * Efficiency evaluation interval (seconds)
      */
     private long efficiencyEvaluationInterval;
 
     /**
-     * 上次效率评估时间
+     * Last efficiency evaluation time
      */
     private long lastEfficiencyEvaluationTime;
 
     /**
-     * 是否启用持续车流生成
+     * Whether continuous flow generation is enabled
      */
     private boolean continuousFlowEnabled;
 
     /**
-     * 车流生成间隔（秒）
+     * Flow generation interval (seconds)
      */
     private long flowGenerationInterval;
 
     /**
-     * 上次生成车流时间
+     * Last flow generation time
      */
     private long lastFlowGenerationTime;
 
     /**
-     * 随机数生成器
+     * Random number generator
      */
     private Random random;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public SimulationEngine() {
         this.state = SimulationState.STOPPED;
         this.currentTime = 0;
-        this.timeStep = 1.0; // 默认1秒
+        this.timeStep = 1.0; // default 1 second
         this.speedMultiplier = 1.0;
-        this.efficiencyEvaluationInterval = 3600; // 每小时评估一次
+        this.efficiencyEvaluationInterval = 3600; // evaluate once per hour
         this.lastEfficiencyEvaluationTime = 0;
-        this.continuousFlowEnabled = true; // 默认启用持续车流
-        this.flowGenerationInterval = 30; // 每30秒生成一次新车流
+        this.continuousFlowEnabled = true; // enable continuous flow by default
+        this.flowGenerationInterval = 30; // generate new flows every 30 seconds
         this.lastFlowGenerationTime = 0;
         this.random = new Random();
     }
 
     /**
-     * 初始化仿真
+     * Initialize simulation
      */
     public void initialize(Graph graph) {
         this.graph = graph;
@@ -108,52 +108,52 @@ public class SimulationEngine {
         this.currentTime = 0;
         this.state = SimulationState.INITIALIZED;
 
-        System.out.println("仿真引擎已初始化");
+        System.out.println("Simulation engine initialized");
     }
 
     /**
-     * 开始仿真
+     * Start simulation
      */
     public void start() {
         if (state == SimulationState.INITIALIZED || state == SimulationState.PAUSED) {
             state = SimulationState.RUNNING;
 
-            // 立即生成初始车流，让用户马上看到车辆
+            // Generate initial flows immediately so users can see vehicles right away
             if (continuousFlowEnabled && state == SimulationState.RUNNING) {
-                System.out.println("生成初始车流...");
+                System.out.println("Generating initial traffic flows...");
                 generateRandomFlows();
-                generateRandomFlows(); // 生成两批初始车流
+                generateRandomFlows(); // generate two batches of initial flows
             }
 
-            System.out.println("仿真已启动");
+            System.out.println("Simulation started");
         }
     }
 
     /**
-     * 暂停仿真
+     * Pause simulation
      */
     public void pause() {
         if (state == SimulationState.RUNNING) {
             state = SimulationState.PAUSED;
-            System.out.println("仿真已暂停");
+            System.out.println("Simulation paused");
         }
     }
 
     /**
-     * 停止仿真
+     * Stop simulation
      */
     public void stop() {
         state = SimulationState.STOPPED;
         currentTime = 0;
-        System.out.println("仿真已停止");
+        System.out.println("Simulation stopped");
     }
 
     /**
-     * 重置仿真
+     * Reset simulation
      */
     public void reset() {
-        System.out.println("=== DEBUG: reset() 被调用 ===");
-        System.out.println("调用堆栈：");
+        System.out.println("=== DEBUG: reset() called ===");
+        System.out.println("Call stack:");
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         for (int i = 2; i < Math.min(stackTrace.length, 8); i++) {
             System.out.println("  " + stackTrace[i]);
@@ -165,75 +165,75 @@ public class SimulationEngine {
         currentTime = 0;
         lastEfficiencyEvaluationTime = 0;
         state = SimulationState.INITIALIZED;
-        System.out.println("仿真已重置");
+        System.out.println("Simulation reset");
     }
 
     /**
-     * 执行单个时间步（主仿真循环）
+     * Execute single time step (main simulation loop)
      */
     public void step() {
         if (state != SimulationState.RUNNING) {
             return;
         }
 
-        // 1. 更新信号灯
+        // 1. Update traffic lights
         signalController.updateSignals();
 
-        // 2. 更新交通流
+        // 2. Update traffic flows
         updateTrafficFlows();
 
-        // 3. 更新流量管理器
+        // 3. Update flow manager
         flowManager.updateFlows(timeStep);
 
-        // 4. 增加仿真时间
+        // 4. Increment simulation time
         currentTime += (long) timeStep;
 
-        // 5. 持续生成新车流（如果启用）
+        // 5. Continuously generate new flows (if enabled)
         if (continuousFlowEnabled && currentTime - lastFlowGenerationTime >= flowGenerationInterval) {
             generateRandomFlows();
             lastFlowGenerationTime = currentTime;
         }
 
-        // 6. 定期评估效率
+        // 6. Periodically evaluate efficiency
         if (currentTime - lastEfficiencyEvaluationTime >= efficiencyEvaluationInterval) {
             evaluateEfficiency();
             lastEfficiencyEvaluationTime = currentTime;
         }
 
-        // 7. 定期优化信号灯
-        if (currentTime % 300 == 0) { // 每5分钟优化一次
+        // 7. Periodically optimize traffic lights
+        if (currentTime % 300 == 0) { // optimize every 5 minutes
             signalController.optimizeSignals();
         }
     }
 
     /**
-     * 更新交通流的移动
+     * Update traffic flow movement
      */
     private void updateTrafficFlows() {
         List<TrafficFlow> activeFlows = flowManager.getActiveFlowsList();
 
         for (TrafficFlow flow : activeFlows) {
-            // 跳过已完成的流
+            // Skip completed flows
             if (flow.getState() == TrafficFlow.FlowState.COMPLETED) {
-                System.out.println("DEBUG updateTrafficFlows: 跳过已完成的流 " + flow.getFlowId());
+                System.out.println("DEBUG updateTrafficFlows: skipping completed flow " + flow.getFlowId());
                 continue;
             }
 
             if (flow.getState() == TrafficFlow.FlowState.WAITING) {
-                // 尝试进入网络
+                // Try to enter the network
                 tryEnterNetwork(flow);
             } else if (flow.getState() == TrafficFlow.FlowState.ACTIVE) {
-                // 尝试移动到下一个节点
+                // Try to move to the next node
                 tryMoveToNextNode(flow);
             } else if (flow.getState() == TrafficFlow.FlowState.BLOCKED) {
-                // 被阻塞的车辆也需要继续尝试移动（信号灯可能变绿了）
+                // Blocked vehicles still need to keep trying to move (signal may have turned green)
                 tryMoveToNextNode(flow);
             }
         }
     }
 
     /**
-     * 尝试让流进入网络
+     * Try to enter the network for a flow
      */
     private void tryEnterNetwork(TrafficFlow flow) {
         Node currentNode = flow.getCurrentNode();
@@ -253,7 +253,7 @@ public class SimulationEngine {
             " isFull=" + (edge != null ? edge.isFull() : "N/A"));
 
         if (edge != null && !edge.isFull()) {
-            // 检查信号灯（如果当前节点是路口）
+            // Check traffic light (if current node is an intersection)
             boolean canPass = canPass(currentNode, nextNode);
             System.out.println("DEBUG: canPass=" + canPass);
 
@@ -263,14 +263,14 @@ public class SimulationEngine {
                 if (added) {
                     flow.setCurrentEdge(edge);
                     flow.setState(TrafficFlow.FlowState.ACTIVE);
-                    System.out.println("交通流 " + flow.getFlowId() + " 成功进入道路 " + edge.getId());
+                    System.out.println("Traffic flow " + flow.getFlowId() + " successfully entered road " + edge.getId());
                 }
             }
         }
     }
 
     /**
-     * 尝试移动到下一个节点
+     * Try to move flow to the next node
      */
     private void tryMoveToNextNode(TrafficFlow flow) {
         Edge currentEdge = flow.getCurrentEdge();
@@ -278,8 +278,8 @@ public class SimulationEngine {
             return;
         }
 
-        // 检查是否已在当前边上停留足够时间（使用实际速度，考虑拥堵）
-        double requiredTime = currentEdge.getActualTravelTime() * 60; // 转换为秒
+        // Check if enough time has been spent on the current edge (using actual speed with congestion)
+        double requiredTime = currentEdge.getActualTravelTime() * 60; // convert to seconds
         double occupancyRate = currentEdge.getOccupancyRate();
         System.out.println("DEBUG tryMoveToNextNode: " + flow.getFlowId() +
             " timeOnEdge=" + flow.getTimeOnCurrentEdge() +
@@ -289,7 +289,7 @@ public class SimulationEngine {
             " state=" + flow.getState());
 
         if (flow.getTimeOnCurrentEdge() >= requiredTime) {
-            // 尝试移动到下一个节点
+            // Try to move to the next node
             Node currentNode = flow.getCurrentNode();
             Node nextNode = flow.getNextNode();
 
@@ -299,21 +299,21 @@ public class SimulationEngine {
                 " canPass=" + canPassResult);
 
             if (canPassResult) {
-                // 可以通过信号灯，从当前边移除
+                // Can pass the traffic light, remove from current edge
                 currentEdge.removeVehicle();
 
-                // 移动到下一个节点
+                // Move to next node
                 flow.moveToNextNode();
-                flow.setTimeOnCurrentEdge(0); // 重置时间计数器
+                flow.setTimeOnCurrentEdge(0); // reset time counter
 
-                // 检查是否到达目的地
+                // Check if destination has been reached
                 if (flow.hasReachedDestination()) {
                     flow.setState(TrafficFlow.FlowState.COMPLETED);
-                    System.out.println("交通流 " + flow.getFlowId() + " 已完成旅程！");
-                    System.out.println("DEBUG: 流状态已设置为 COMPLETED, isCompleted=" + flow.isCompleted() +
+                    System.out.println("Traffic flow " + flow.getFlowId() + " has completed its journey!");
+                    System.out.println("DEBUG: flow state set to COMPLETED, isCompleted=" + flow.isCompleted() +
                         " currentPathIndex=" + flow.getCurrentPathIndex() + " pathSize=" + flow.getPath().size());
                 } else {
-                    // 还有下一段路，尝试进入下一条边
+                    // Still more road ahead, try to enter next edge
                     Node newNextNode = flow.getNextNode();
                     if (newNextNode != null) {
                         Edge newEdge = flow.getCurrentNode().getEdgeTo(newNextNode);
@@ -322,51 +322,51 @@ public class SimulationEngine {
                             flow.setCurrentEdge(newEdge);
                             flow.setState(TrafficFlow.FlowState.ACTIVE);
                         } else {
-                            // 下一条边已满，暂时阻塞
+                            // Next edge is full, temporarily blocked
                             flow.setState(TrafficFlow.FlowState.BLOCKED);
                         }
                     } else {
-                        // 没有下一个节点了，说明到达目的地
+                        // No next node, destination has been reached
                         flow.setState(TrafficFlow.FlowState.COMPLETED);
-                        System.out.println("交通流 " + flow.getFlowId() + " 已到达目的地！");
+                        System.out.println("Traffic flow " + flow.getFlowId() + " has reached destination!");
                     }
                 }
             } else {
-                // 无法通过（信号灯是红灯或方向不匹配），设置为阻塞状态
+                // Cannot pass (red light or direction mismatch), set to blocked state
                 flow.setState(TrafficFlow.FlowState.BLOCKED);
             }
         }
     }
 
     /**
-     * 检查是否可以从一个节点通过到另一个节点
+     * Check if a flow can pass from one node to another
      */
     private boolean canPass(Node from, Node to) {
-        // 如果起点不是路口，可以通过
+        // If source is not an intersection, can pass
         if (from.getType() != NodeType.INTERSECTION) {
             return true;
         }
 
-        // 检查信号灯
+        // Check traffic light
         TrafficLight light = from.getTrafficLight();
         if (light == null) {
             return true;
         }
 
-        // 简化实现：根据节点位置判断方向
-        // TODO: 实现更精确的方向判断
+        // Simplified implementation: determine direction based on node position
+        // TODO: Implement more precise direction determination
         TrafficLight.SignalDirection direction = determineDirection(from, to);
         return light.canPass(direction);
     }
 
     /**
-     * 判断行驶方向
+     * Determine travel direction
      */
     private TrafficLight.SignalDirection determineDirection(Node from, Node to) {
         double dx = to.getX() - from.getX();
         double dy = to.getY() - from.getY();
 
-        // 如果水平移动大于垂直移动，则为东西向
+        // If horizontal movement is greater than vertical, it is east-west
         if (Math.abs(dx) > Math.abs(dy)) {
             return TrafficLight.SignalDirection.EAST_WEST;
         } else {
@@ -375,7 +375,7 @@ public class SimulationEngine {
     }
 
     /**
-     * 评估当前效率
+     * Evaluate current efficiency
      */
     private void evaluateEfficiency() {
         List<TrafficFlow> completedFlows = flowManager.getCompletedFlowsList();
@@ -384,11 +384,11 @@ public class SimulationEngine {
         efficiencyCalculator.recordEfficiency(efficiency, currentTime);
         signalController.recordOptimization(efficiency);
 
-        System.out.printf("时间 %d 秒 - 效率: %.2f%n", currentTime, efficiency);
+        System.out.printf("Time %d s - Efficiency: %.2f%n", currentTime, efficiency);
     }
 
     /**
-     * 获取当前性能指标
+     * Get current performance metrics
      */
     public EfficiencyCalculator.PerformanceMetrics getCurrentMetrics() {
         return efficiencyCalculator.calculatePerformanceMetrics(
@@ -398,80 +398,80 @@ public class SimulationEngine {
     }
 
     /**
-     * 设置时间步长
+     * Set time step
      */
     public void setTimeStep(double timeStep) {
         this.timeStep = Math.max(0.1, Math.min(10.0, timeStep));
     }
 
     /**
-     * 设置仿真速度
+     * Set simulation speed
      */
     public void setSpeedMultiplier(double multiplier) {
         this.speedMultiplier = Math.max(0.1, Math.min(10.0, multiplier));
     }
 
     /**
-     * 随机生成新的车流
+     * Randomly generate new traffic flows
      */
     private void generateRandomFlows() {
         if (graph == null) {
             return;
         }
 
-        // 获取所有边界节点
+        // Get all boundary nodes
         List<Node> boundaryNodes = graph.getBoundaryNodes();
         if (boundaryNodes.size() < 2) {
             return;
         }
 
-        // 随机生成1-3个车流
+        // Randomly generate 1-3 flows
         int flowCount = random.nextInt(3) + 1;
 
         for (int i = 0; i < flowCount; i++) {
-            // 随机选择不同的入口和出口
+            // Randomly select different entry and exit points
             Node entry = boundaryNodes.get(random.nextInt(boundaryNodes.size()));
             Node destination;
             do {
                 destination = boundaryNodes.get(random.nextInt(boundaryNodes.size()));
             } while (entry.equals(destination));
 
-            // 随机车辆数量：5-15辆
+            // Random number of vehicles: 5-15
             int numberOfCars = random.nextInt(11) + 5;
 
             try {
                 flowManager.createFlow(entry.getId(), destination.getId(), numberOfCars);
-                System.out.println("自动生成车流: " + entry.getId() + " → " +
-                    destination.getId() + " (" + numberOfCars + "辆)");
+                System.out.println("Auto-generated flow: " + entry.getId() + " -> " +
+                    destination.getId() + " (" + numberOfCars + " vehicles)");
             } catch (Exception e) {
-                System.err.println("生成车流失败: " + e.getMessage());
+                System.err.println("Failed to generate flow: " + e.getMessage());
             }
         }
     }
 
     /**
-     * 设置是否启用持续车流生成
+     * Set whether continuous flow generation is enabled
      */
     public void setContinuousFlowEnabled(boolean enabled) {
         this.continuousFlowEnabled = enabled;
-        System.out.println("持续车流生成: " + (enabled ? "启用" : "禁用"));
+        System.out.println("Continuous flow generation: " + (enabled ? "enabled" : "disabled"));
     }
 
     /**
-     * 设置车流生成间隔
+     * Set flow generation interval
      */
     public void setFlowGenerationInterval(long interval) {
-        this.flowGenerationInterval = Math.max(10, interval); // 最小10秒
-        System.out.println("车流生成间隔设置为: " + interval + "秒");
+        this.flowGenerationInterval = Math.max(10, interval); // minimum 10 seconds
+        System.out.println("Flow generation interval set to: " + interval + " seconds");
     }
 
     /**
-     * 仿真状态枚举
+     * Simulation state enumeration
      */
     public enum SimulationState {
-        STOPPED,      // 已停止
-        INITIALIZED,  // 已初始化
-        RUNNING,      // 运行中
-        PAUSED        // 已暂停
+        STOPPED,      // stopped
+        INITIALIZED,  // initialized
+        RUNNING,      // running
+        PAUSED        // paused
     }
 }

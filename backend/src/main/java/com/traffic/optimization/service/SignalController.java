@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 /**
- * 信号灯控制器 - 负责管理所有路口的信号灯
+ * Signal controller - responsible for managing traffic lights at all intersections
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -19,27 +19,27 @@ import java.util.*;
 public class SignalController {
 
     /**
-     * 道路网络图
+     * Road network graph
      */
     private Graph graph;
 
     /**
-     * 流量管理器
+     * Flow manager
      */
     private FlowManager flowManager;
 
     /**
-     * 优化模式
+     * Optimization mode
      */
     private OptimizationMode mode;
 
     /**
-     * 优化历史记录
+     * Optimization history records
      */
     private List<OptimizationRecord> optimizationHistory;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public SignalController() {
         this.mode = OptimizationMode.FIXED_TIME;
@@ -47,28 +47,28 @@ public class SignalController {
     }
 
     /**
-     * 设置道路网络图
+     * Set road network graph
      */
     public void setGraph(Graph graph) {
         this.graph = graph;
     }
 
     /**
-     * 设置流量管理器
+     * Set flow manager
      */
     public void setFlowManager(FlowManager flowManager) {
         this.flowManager = flowManager;
     }
 
     /**
-     * 设置优化模式
+     * Set optimization mode
      */
     public void setOptimizationMode(OptimizationMode mode) {
         this.mode = mode;
     }
 
     /**
-     * 更新所有信号灯（每秒调用）
+     * Update all traffic lights (called each second)
      */
     public void updateSignals() {
         if (graph == null) {
@@ -83,7 +83,7 @@ public class SignalController {
     }
 
     /**
-     * 优化信号灯时序
+     * Optimize signal timing
      */
     public void optimizeSignals() {
         if (graph == null || flowManager == null) {
@@ -92,7 +92,7 @@ public class SignalController {
 
         switch (mode) {
             case FIXED_TIME:
-                // 固定时长模式，不做优化
+                // Fixed time mode, no optimization
                 break;
 
             case TRAFFIC_ADAPTIVE:
@@ -106,7 +106,7 @@ public class SignalController {
     }
 
     /**
-     * 基于交通量的自适应优化
+     * Traffic volume-based adaptive optimization
      */
     private void optimizeByTrafficVolume() {
         for (Node node : graph.getIntersectionNodes()) {
@@ -115,44 +115,44 @@ public class SignalController {
                 continue;
             }
 
-            // 计算该路口的等待车辆数
+            // Calculate waiting vehicles at this intersection
             int waitingVehicles = flowManager.getWaitingFlowsAtNode(node);
 
-            // 根据等待车辆数调整绿灯时长
+            // Adjust green light duration based on waiting vehicles
             int newGreenDuration = calculateOptimalGreenTime(waitingVehicles);
 
-            // 应用新的绿灯时长
+            // Apply new green light duration
             light.adjustGreenDuration(newGreenDuration);
         }
     }
 
     /**
-     * 计算最优绿灯时间
+     * Calculate optimal green light time
      */
     private int calculateOptimalGreenTime(int waitingVehicles) {
-        // 基础时长
+        // Base duration
         int baseTime = 20;
 
-        // 根据等待车辆数增加时长（每10辆车增加5秒）
+        // Increase duration based on waiting vehicles (5 seconds per 10 vehicles)
         int additionalTime = (waitingVehicles / 10) * 5;
 
-        // 总时长限制在15-60秒之间
+        // Total duration limited to 15-60 seconds
         return Math.max(15, Math.min(60, baseTime + additionalTime));
     }
 
     /**
-     * 基于学习的优化（简化版）
+     * Learning-based optimization (simplified version)
      */
     private void optimizeByLearning() {
-        // TODO: 实现基于历史数据的学习优化
-        // 这里可以使用强化学习或其他机器学习算法
+        // TODO: Implement learning optimization based on historical data
+        // Can use reinforcement learning or other machine learning algorithms
 
-        // 当前简化实现：使用历史平均效率来调整
+        // Current simplified implementation: use historical average efficiency to adjust
         optimizeByTrafficVolume();
     }
 
     /**
-     * 手动设置单个路口的信号时长
+     * Manually set signal timing for a single intersection
      */
     public void setSignalTiming(String nodeId, int greenDuration) {
         Node node = graph.getNode(nodeId);
@@ -165,7 +165,7 @@ public class SignalController {
     }
 
     /**
-     * 同步所有信号灯（使其协调工作）
+     * Synchronize all traffic lights (to coordinate their operation)
      */
     public void synchronizeSignals() {
         List<Node> intersections = graph.getIntersectionNodes();
@@ -173,12 +173,12 @@ public class SignalController {
             return;
         }
 
-        // 获取主干道路口
-        // 简化实现：将所有东西向信号灯同步
+        // Get main road intersections
+        // Simplified implementation: synchronize all east-west signals
         for (Node node : intersections) {
             TrafficLight light = node.getTrafficLight();
             if (light != null) {
-                // 重置到相同的初始状态
+                // Reset to the same initial state
                 light.setCurrentDirection(TrafficLight.SignalDirection.EAST_WEST);
                 light.setCurrentState(TrafficLight.SignalState.GREEN);
                 light.setRemainingTime(light.getGreenDuration());
@@ -187,7 +187,7 @@ public class SignalController {
     }
 
     /**
-     * 获取所有信号灯状态
+     * Get all signal statuses
      */
     public List<SignalStatus> getAllSignalStatuses() {
         List<SignalStatus> statuses = new ArrayList<>();
@@ -211,7 +211,7 @@ public class SignalController {
     }
 
     /**
-     * 记录优化结果
+     * Record optimization result
      */
     public void recordOptimization(double efficiency) {
         OptimizationRecord record = new OptimizationRecord(
@@ -221,23 +221,23 @@ public class SignalController {
         );
         optimizationHistory.add(record);
 
-        // 只保留最近100条记录
+        // Keep only the most recent 100 records
         if (optimizationHistory.size() > 100) {
             optimizationHistory.remove(0);
         }
     }
 
     /**
-     * 优化模式枚举
+     * Optimization mode enumeration
      */
     public enum OptimizationMode {
-        FIXED_TIME,         // 固定时长模式
-        TRAFFIC_ADAPTIVE,   // 交通自适应模式
-        LEARNING_BASED      // 基于学习的模式
+        FIXED_TIME,         // fixed time mode
+        TRAFFIC_ADAPTIVE,   // traffic adaptive mode
+        LEARNING_BASED      // learning-based mode
     }
 
     /**
-     * 信号状态类
+     * Signal status class
      */
     @Getter
     public static class SignalStatus {
@@ -262,7 +262,7 @@ public class SignalController {
     }
 
     /**
-     * 优化记录类
+     * Optimization record class
      */
     @Getter
     public static class OptimizationRecord {

@@ -7,19 +7,19 @@ import com.traffic.optimization.model.Node;
 import java.util.*;
 
 /**
- * Dijkstra最短路径算法实现
+ * Dijkstra shortest path algorithm implementation
  *
  * @author Chengkun Liao, Mingjie Shen
  */
 public class DijkstraAlgorithm {
 
     /**
-     * 计算从起点到终点的最短路径
+     * Calculate shortest path from start to end
      *
-     * @param graph 道路网络图
-     * @param start 起点节点
-     * @param end 终点节点
-     * @return 最短路径的节点列表，如果不存在路径则返回null
+     * @param graph road network graph
+     * @param start start node
+     * @param end end node
+     * @return list of nodes on shortest path, or null if no path exists
      */
     public static List<Node> findShortestPath(Graph graph, Node start, Node end) {
         if (start == null || end == null) {
@@ -30,45 +30,45 @@ public class DijkstraAlgorithm {
             return Collections.singletonList(start);
         }
 
-        // 距离映射：每个节点到起点的最短距离
+        // Distance map: shortest distance from each node to start
         Map<Node, Double> distances = new HashMap<>();
 
-        // 前驱节点映射：用于重建路径
+        // Predecessor map: used to reconstruct path
         Map<Node, Node> predecessors = new HashMap<>();
 
-        // 已访问节点集合
+        // Visited node set
         Set<Node> visited = new HashSet<>();
 
-        // 优先队列：按距离排序
+        // Priority queue: sorted by distance
         PriorityQueue<NodeDistance> queue = new PriorityQueue<>(
             Comparator.comparingDouble(nd -> nd.distance)
         );
 
-        // 初始化
+        // Initialize
         for (Node node : graph.getAllNodes()) {
             distances.put(node, Double.POSITIVE_INFINITY);
         }
         distances.put(start, 0.0);
         queue.offer(new NodeDistance(start, 0.0));
 
-        // Dijkstra主循环
+        // Dijkstra main loop
         while (!queue.isEmpty()) {
             NodeDistance current = queue.poll();
             Node currentNode = current.node;
 
-            // 如果已访问过，跳过
+            // Skip if already visited
             if (visited.contains(currentNode)) {
                 continue;
             }
 
             visited.add(currentNode);
 
-            // 如果到达目标节点，提前终止
+            // Early termination if target node is reached
             if (currentNode.equals(end)) {
                 break;
             }
 
-            // 检查所有邻居
+            // Check all neighbors
             for (Edge edge : currentNode.getOutgoingEdges()) {
                 Node neighbor = edge.getToNode();
 
@@ -76,10 +76,10 @@ public class DijkstraAlgorithm {
                     continue;
                 }
 
-                // 计算通过当前节点到邻居的距离
+                // Calculate distance to neighbor through current node
                 double newDistance = distances.get(currentNode) + edge.getDistance();
 
-                // 如果找到更短的路径，更新
+                // Update if shorter path found
                 if (newDistance < distances.get(neighbor)) {
                     distances.put(neighbor, newDistance);
                     predecessors.put(neighbor, currentNode);
@@ -88,42 +88,42 @@ public class DijkstraAlgorithm {
             }
         }
 
-        // 重建路径
+        // Reconstruct path
         return reconstructPath(predecessors, start, end);
     }
 
     /**
-     * 计算从起点到所有其他节点的最短路径
+     * Calculate shortest paths from start to all other nodes
      *
-     * @param graph 道路网络图
-     * @param start 起点节点
-     * @return 从起点到所有节点的最短路径映射
+     * @param graph road network graph
+     * @param start start node
+     * @return map of shortest paths from start to all nodes
      */
     public static Map<Node, List<Node>> findAllShortestPaths(Graph graph, Node start) {
         Map<Node, List<Node>> allPaths = new HashMap<>();
 
-        // 距离映射
+        // Distance map
         Map<Node, Double> distances = new HashMap<>();
 
-        // 前驱节点映射
+        // Predecessor map
         Map<Node, Node> predecessors = new HashMap<>();
 
-        // 已访问节点集合
+        // Visited node set
         Set<Node> visited = new HashSet<>();
 
-        // 优先队列
+        // Priority queue
         PriorityQueue<NodeDistance> queue = new PriorityQueue<>(
             Comparator.comparingDouble(nd -> nd.distance)
         );
 
-        // 初始化
+        // Initialize
         for (Node node : graph.getAllNodes()) {
             distances.put(node, Double.POSITIVE_INFINITY);
         }
         distances.put(start, 0.0);
         queue.offer(new NodeDistance(start, 0.0));
 
-        // Dijkstra主循环
+        // Dijkstra main loop
         while (!queue.isEmpty()) {
             NodeDistance current = queue.poll();
             Node currentNode = current.node;
@@ -151,7 +151,7 @@ public class DijkstraAlgorithm {
             }
         }
 
-        // 为所有可达节点重建路径
+        // Reconstruct paths for all reachable nodes
         for (Node node : graph.getAllNodes()) {
             if (!node.equals(start) && distances.get(node) != Double.POSITIVE_INFINITY) {
                 allPaths.put(node, reconstructPath(predecessors, start, node));
@@ -162,11 +162,11 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 重建从起点到终点的路径
+     * Reconstruct path from start to end
      */
     private static List<Node> reconstructPath(Map<Node, Node> predecessors, Node start, Node end) {
         if (!predecessors.containsKey(end) && !start.equals(end)) {
-            return null; // 无法到达
+            return null; // unreachable
         }
 
         LinkedList<Node> path = new LinkedList<>();
@@ -184,7 +184,7 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 计算路径的总距离
+     * Calculate total distance of a path
      */
     public static double calculatePathDistance(List<Node> path) {
         if (path == null || path.size() < 2) {
@@ -205,7 +205,7 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 辅助类：节点和距离的配对
+     * Helper class: pairing of node and distance
      */
     private static class NodeDistance {
         Node node;

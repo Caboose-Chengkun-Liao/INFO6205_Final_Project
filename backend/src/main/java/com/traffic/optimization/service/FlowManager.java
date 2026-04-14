@@ -5,6 +5,9 @@ import com.traffic.optimization.model.*;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Service
 @Getter
 public class FlowManager {
+
+    private static final Logger log = LoggerFactory.getLogger(FlowManager.class);
 
     /**
      * 道路网络图
@@ -107,7 +112,7 @@ public class FlowManager {
                 );
                 flows.add(flow);
             } catch (Exception e) {
-                System.err.println("创建交通流失败: " + e.getMessage());
+                log.warn("创建交通流失败: {}", e.getMessage());
             }
         }
 
@@ -128,8 +133,7 @@ public class FlowManager {
 
             // 检查是否完成
             if (flow.isCompleted()) {
-                System.out.println("DEBUG FlowManager: 检测到完成的流 " + flow.getFlowId() +
-                    " state=" + flow.getState() + " isCompleted=" + flow.isCompleted());
+                log.debug("检测到完成的流: {}", flow.getFlowId());
                 toRemove.add(flow.getFlowId());
                 completedFlows.put(flow.getFlowId(), flow);
             }
@@ -137,13 +141,12 @@ public class FlowManager {
 
         // 移除已完成的流
         for (String flowId : toRemove) {
-            System.out.println("DEBUG FlowManager: 从activeFlows移除 " + flowId);
             activeFlows.remove(flowId);
         }
 
-        if (toRemove.size() > 0) {
-            System.out.println("DEBUG FlowManager: 当前活跃流=" + activeFlows.size() +
-                " 已完成流=" + completedFlows.size());
+        if (!toRemove.isEmpty()) {
+            log.debug("移除已完成流: {} 个, 当前活跃={}, 已完成={}",
+                toRemove.size(), activeFlows.size(), completedFlows.size());
         }
     }
 
@@ -210,11 +213,8 @@ public class FlowManager {
      * 打印统计信息
      */
     public void printStatistics() {
-        System.out.println("=== 交通流统计 ===");
-        System.out.println("活跃流数量: " + activeFlows.size());
-        System.out.println("已完成流数量: " + completedFlows.size());
-        System.out.println("总流数量: " + getTotalFlowCount());
-        System.out.println("==================");
+        log.info("交通流统计 - 活跃: {}, 已完成: {}, 总计: {}",
+            activeFlows.size(), completedFlows.size(), getTotalFlowCount());
     }
 
     /**

@@ -1,6 +1,9 @@
 package com.traffic.optimization.model;
 
 import lombok.Data;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -10,6 +13,8 @@ import java.util.*;
  */
 @Data
 public class Graph {
+
+    private static final Logger log = LoggerFactory.getLogger(Graph.class);
     /**
      * 所有节点的映射（ID -> Node）
      */
@@ -139,15 +144,41 @@ public class Graph {
     }
 
     /**
+     * Deep copy the entire graph — new Node, Edge, TrafficLight objects.
+     * Used by ComparisonController to run parallel independent simulations.
+     */
+    public Graph deepCopy() {
+        Graph copy = new Graph();
+
+        // 1. Copy all nodes (new objects, same coordinates)
+        Map<String, Node> nodeMapping = new HashMap<>();
+        for (Node original : nodes.values()) {
+            Node cloned = new Node(original.getId(), original.getName(),
+                    original.getType(), original.getX(), original.getY());
+            copy.addNode(cloned);
+            nodeMapping.put(original.getId(), cloned);
+        }
+
+        // 2. Copy all edges using cloned nodes
+        for (Edge original : edges) {
+            Node fromCloned = nodeMapping.get(original.getFromNode().getId());
+            Node toCloned = nodeMapping.get(original.getToNode().getId());
+            if (fromCloned != null && toCloned != null) {
+                Edge cloned = new Edge(original.getId(), fromCloned, toCloned,
+                        original.getDistance(), original.getCapacityPerKm(), original.getSpeedLimit());
+                copy.addEdge(cloned);
+            }
+        }
+
+        return copy;
+    }
+
+    /**
      * 打印图的统计信息
      */
     public void printStatistics() {
-        System.out.println("=== 道路网络统计 ===");
-        System.out.println("总节点数: " + getNodeCount());
-        System.out.println("路口节点: " + intersectionNodes.size());
-        System.out.println("边界节点: " + boundaryNodes.size());
-        System.out.println("总道路数: " + getEdgeCount());
-        System.out.println("===================");
+        log.info("道路网络统计 - 节点: {}, 路口: {}, 边界: {}, 道路: {}",
+            getNodeCount(), intersectionNodes.size(), boundaryNodes.size(), getEdgeCount());
     }
 
     @Override

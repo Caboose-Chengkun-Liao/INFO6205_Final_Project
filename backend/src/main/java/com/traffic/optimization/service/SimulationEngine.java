@@ -1,11 +1,16 @@
 package com.traffic.optimization.service;
 
 import com.traffic.optimization.model.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 仿真引擎 - 负责整个交通系统的时间步进仿真
@@ -15,6 +20,8 @@ import java.util.*;
 @Service
 @Getter
 public class SimulationEngine {
+
+    private static final Logger log = LoggerFactory.getLogger(SimulationEngine.class);
 
     @Autowired
     private FlowManager flowManager;
@@ -31,14 +38,16 @@ public class SimulationEngine {
     private Graph graph;
 
     /**
-     * 仿真状态
+     * 仿真状态（使用AtomicReference保证线程安全）
      */
-    private SimulationState state;
+    @Getter(AccessLevel.NONE)
+    private final AtomicReference<SimulationState> state = new AtomicReference<>(SimulationState.STOPPED);
 
     /**
-     * 当前仿真时间（秒）
+     * 当前仿真时间（秒）（使用AtomicLong保证线程安全）
      */
-    private long currentTime;
+    @Getter(AccessLevel.NONE)
+    private final AtomicLong currentTime = new AtomicLong(0);
 
     /**
      * 时间步长（秒）
@@ -84,16 +93,39 @@ public class SimulationEngine {
      * 构造函数
      */
     public SimulationEngine() {
-        this.state = SimulationState.STOPPED;
-        this.currentTime = 0;
+        this.state.set(SimulationState.STOPPED);
+        this.currentTime.set(0);
         this.timeStep = 1.0; // 默认1秒
         this.speedMultiplier = 1.0;
-        this.efficiencyEvaluationInterval = 3600; // 每小时评估一次
+        this.efficiencyEvaluationInterval = 30; // 每30秒记录一次效率数据（用于趋势图）
         this.lastEfficiencyEvaluationTime = 0;
         this.continuousFlowEnabled = true; // 默认启用持续车流
         this.flowGenerationInterval = 30; // 每30秒生成一次新车流
         this.lastFlowGenerationTime = 0;
         this.random = new Random();
+    }
+
+    /**
+     * Manual dependency injection for non-Spring instances (used by ComparisonController)
+     */
+    public void setDependencies(FlowManager fm, SignalController sc, EfficiencyCalculator ec) {
+        this.flowManager = fm;
+        this.signalController = sc;
+        this.efficiencyCalculator = ec;
+    }
+
+    /**
+     * 获取当前仿真状态（线程安全）
+     */
+    public SimulationState getState() {
+        return state.get();
+    }
+
+    /**
+     * 获取当前仿真时间（线程安全）
+     */
+    public long getCurrentTime() {
+        return currentTime.get();
     }
 
     /**
@@ -105,27 +137,28 @@ public class SimulationEngine {
         this.signalController.setGraph(graph);
         this.signalController.setFlowManager(flowManager);
 
-        this.currentTime = 0;
-        this.state = SimulationState.INITIALIZED;
+        this.currentTime.set(0);
+        this.state.set(SimulationState.INITIALIZED);
 
-        System.out.println("仿真引擎已初始化");
+        log.info("仿真引擎已初始化");
     }
 
     /**
      * 开始仿真
      */
     public void start() {
-        if (state == SimulationState.INITIALIZED || state == SimulationState.PAUSED) {
-            state = SimulationState.RUNNING;
+        SimulationState currentState = state.get();
+        if (currentState == SimulationState.INITIALIZED || currentState == SimulationState.PAUSED) {
+            state.set(SimulationState.RUNNING);
 
             // 立即生成初始车流，让用户马上看到车辆
-            if (continuousFlowEnabled && state == SimulationState.RUNNING) {
-                System.out.println("生成初始车流...");
+            if (continuousFlowEnabled) {
+                log.info("生成初始车流...");
                 generateRandomFlows();
                 generateRandomFlows(); // 生成两批初始车流
             }
 
-            System.out.println("仿真已启动");
+            log.info("仿真已启动");
         }
     }
 
@@ -133,9 +166,9 @@ public class SimulationEngine {
      * 暂停仿真
      */
     public void pause() {
-        if (state == SimulationState.RUNNING) {
-            state = SimulationState.PAUSED;
-            System.out.println("仿真已暂停");
+        if (state.get() == SimulationState.RUNNING) {
+            state.set(SimulationState.PAUSED);
+            log.info("仿真已暂停");
         }
     }
 
@@ -143,36 +176,31 @@ public class SimulationEngine {
      * 停止仿真
      */
     public void stop() {
-        state = SimulationState.STOPPED;
-        currentTime = 0;
-        System.out.println("仿真已停止");
+        state.set(SimulationState.STOPPED);
+        currentTime.set(0);
+        log.info("仿真已停止");
     }
 
     /**
      * 重置仿真
      */
     public void reset() {
-        System.out.println("=== DEBUG: reset() 被调用 ===");
-        System.out.println("调用堆栈：");
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        for (int i = 2; i < Math.min(stackTrace.length, 8); i++) {
-            System.out.println("  " + stackTrace[i]);
-        }
+        log.debug("reset() 被调用");
 
         stop();
         flowManager.clearAllFlows();
         efficiencyCalculator.clearHistory();
-        currentTime = 0;
+        currentTime.set(0);
         lastEfficiencyEvaluationTime = 0;
-        state = SimulationState.INITIALIZED;
-        System.out.println("仿真已重置");
+        state.set(SimulationState.INITIALIZED);
+        log.info("仿真已重置");
     }
 
     /**
      * 执行单个时间步（主仿真循环）
      */
-    public void step() {
-        if (state != SimulationState.RUNNING) {
+    public synchronized void step() {
+        if (state.get() != SimulationState.RUNNING) {
             return;
         }
 
@@ -186,22 +214,22 @@ public class SimulationEngine {
         flowManager.updateFlows(timeStep);
 
         // 4. 增加仿真时间
-        currentTime += (long) timeStep;
+        long time = currentTime.addAndGet((long) timeStep);
 
         // 5. 持续生成新车流（如果启用）
-        if (continuousFlowEnabled && currentTime - lastFlowGenerationTime >= flowGenerationInterval) {
+        if (continuousFlowEnabled && time - lastFlowGenerationTime >= flowGenerationInterval) {
             generateRandomFlows();
-            lastFlowGenerationTime = currentTime;
+            lastFlowGenerationTime = time;
         }
 
         // 6. 定期评估效率
-        if (currentTime - lastEfficiencyEvaluationTime >= efficiencyEvaluationInterval) {
+        if (time - lastEfficiencyEvaluationTime >= efficiencyEvaluationInterval) {
             evaluateEfficiency();
-            lastEfficiencyEvaluationTime = currentTime;
+            lastEfficiencyEvaluationTime = time;
         }
 
         // 7. 定期优化信号灯
-        if (currentTime % 300 == 0) { // 每5分钟优化一次
+        if (time % 300 == 0) { // 每5分钟优化一次
             signalController.optimizeSignals();
         }
     }
@@ -215,7 +243,7 @@ public class SimulationEngine {
         for (TrafficFlow flow : activeFlows) {
             // 跳过已完成的流
             if (flow.getState() == TrafficFlow.FlowState.COMPLETED) {
-                System.out.println("DEBUG updateTrafficFlows: 跳过已完成的流 " + flow.getFlowId());
+                log.debug("updateTrafficFlows: 跳过已完成的流 {}", flow.getFlowId());
                 continue;
             }
 
@@ -239,31 +267,28 @@ public class SimulationEngine {
         Node currentNode = flow.getCurrentNode();
         Node nextNode = flow.getNextNode();
 
-        System.out.println("DEBUG tryEnterNetwork: " + flow.getFlowId() +
-            " currentNode=" + (currentNode != null ? currentNode.getId() : "null") +
-            " nextNode=" + (nextNode != null ? nextNode.getId() : "null"));
+        log.debug("tryEnterNetwork: {} currentNode={} nextNode={}",
+            flow.getFlowId(),
+            currentNode != null ? currentNode.getId() : "null",
+            nextNode != null ? nextNode.getId() : "null");
 
         if (nextNode == null) {
-            System.out.println("DEBUG: nextNode is null for " + flow.getFlowId());
+            log.debug("nextNode is null for {}", flow.getFlowId());
             return;
         }
 
         Edge edge = currentNode.getEdgeTo(nextNode);
-        System.out.println("DEBUG: edge=" + (edge != null ? edge.getId() : "null") +
-            " isFull=" + (edge != null ? edge.isFull() : "N/A"));
 
         if (edge != null && !edge.isFull()) {
             // 检查信号灯（如果当前节点是路口）
             boolean canPass = canPass(currentNode, nextNode);
-            System.out.println("DEBUG: canPass=" + canPass);
 
             if (canPass) {
                 boolean added = edge.addVehicle(flow);
-                System.out.println("DEBUG: addVehicle result=" + added);
                 if (added) {
                     flow.setCurrentEdge(edge);
                     flow.setState(TrafficFlow.FlowState.ACTIVE);
-                    System.out.println("交通流 " + flow.getFlowId() + " 成功进入道路 " + edge.getId());
+                    log.debug("交通流 {} 成功进入道路 {}", flow.getFlowId(), edge.getId());
                 }
             }
         }
@@ -280,13 +305,9 @@ public class SimulationEngine {
 
         // 检查是否已在当前边上停留足够时间（使用实际速度，考虑拥堵）
         double requiredTime = currentEdge.getActualTravelTime() * 60; // 转换为秒
-        double occupancyRate = currentEdge.getOccupancyRate();
-        System.out.println("DEBUG tryMoveToNextNode: " + flow.getFlowId() +
-            " timeOnEdge=" + flow.getTimeOnCurrentEdge() +
-            " requiredTime=" + requiredTime +
-            " occupancy=" + String.format("%.1f%%", occupancyRate * 100) +
-            " actualSpeed=" + String.format("%.1f", currentEdge.getActualSpeed()) + "km/h" +
-            " state=" + flow.getState());
+        log.trace("tryMoveToNextNode: {} timeOnEdge={} requiredTime={} occupancy={}%",
+            flow.getFlowId(), flow.getTimeOnCurrentEdge(), requiredTime,
+            String.format("%.1f", currentEdge.getOccupancyRate() * 100));
 
         if (flow.getTimeOnCurrentEdge() >= requiredTime) {
             // 尝试移动到下一个节点
@@ -294,24 +315,18 @@ public class SimulationEngine {
             Node nextNode = flow.getNextNode();
 
             boolean canPassResult = (nextNode != null && canPass(currentNode, nextNode));
-            System.out.println("DEBUG: currentNode=" + (currentNode != null ? currentNode.getId() : "null") +
-                " nextNode=" + (nextNode != null ? nextNode.getId() : "null") +
-                " canPass=" + canPassResult);
 
             if (canPassResult) {
-                // 可以通过信号灯，从当前边移除
-                currentEdge.removeVehicle();
+                // 可以通过信号灯，从当前边移除该流
+                currentEdge.removeVehicle(flow);
 
                 // 移动到下一个节点
                 flow.moveToNextNode();
                 flow.setTimeOnCurrentEdge(0); // 重置时间计数器
 
-                // 检查是否到达目的地
-                if (flow.hasReachedDestination()) {
-                    flow.setState(TrafficFlow.FlowState.COMPLETED);
-                    System.out.println("交通流 " + flow.getFlowId() + " 已完成旅程！");
-                    System.out.println("DEBUG: 流状态已设置为 COMPLETED, isCompleted=" + flow.isCompleted() +
-                        " currentPathIndex=" + flow.getCurrentPathIndex() + " pathSize=" + flow.getPath().size());
+                // moveToNextNode() 内部已处理 COMPLETED 状态
+                if (flow.isCompleted()) {
+                    log.debug("交通流 {} 已完成旅程", flow.getFlowId());
                 } else {
                     // 还有下一段路，尝试进入下一条边
                     Node newNextNode = flow.getNextNode();
@@ -328,7 +343,8 @@ public class SimulationEngine {
                     } else {
                         // 没有下一个节点了，说明到达目的地
                         flow.setState(TrafficFlow.FlowState.COMPLETED);
-                        System.out.println("交通流 " + flow.getFlowId() + " 已到达目的地！");
+                        flow.setCompletedCars(flow.getNumberOfCars());
+                        log.debug("交通流 {} 已到达目的地", flow.getFlowId());
                     }
                 }
             } else {
@@ -381,10 +397,29 @@ public class SimulationEngine {
         List<TrafficFlow> completedFlows = flowManager.getCompletedFlowsList();
         double efficiency = efficiencyCalculator.calculateEfficiency(completedFlows);
 
-        efficiencyCalculator.recordEfficiency(efficiency, currentTime);
+        // 如果还没有完成的车流，用活跃车流的实时进度估算效率，避免图表空白
+        if (efficiency == 0.0) {
+            List<TrafficFlow> activeFlows = flowManager.getActiveFlowsList();
+            double numeratorSum = 0.0;
+            int denominatorSum = 0;
+            for (TrafficFlow flow : activeFlows) {
+                int Ni = flow.getNumberOfCars();
+                double Li = flow.getTotalDistance();
+                double ti = flow.getTravelTimeCounter() / 3600.0;
+                if (ti > 0 && Li > 0) {
+                    numeratorSum += (Ni * Li / ti);
+                    denominatorSum += Ni;
+                }
+            }
+            if (denominatorSum > 0) {
+                efficiency = numeratorSum / denominatorSum;
+            }
+        }
+
+        efficiencyCalculator.recordEfficiency(efficiency, currentTime.get());
         signalController.recordOptimization(efficiency);
 
-        System.out.printf("时间 %d 秒 - 效率: %.2f%n", currentTime, efficiency);
+        log.info("时间 {} 秒 - 效率: {}", currentTime.get(), String.format("%.2f", efficiency));
     }
 
     /**
@@ -392,6 +427,7 @@ public class SimulationEngine {
      */
     public EfficiencyCalculator.PerformanceMetrics getCurrentMetrics() {
         return efficiencyCalculator.calculatePerformanceMetrics(
+            graph,
             flowManager.getActiveFlowsList(),
             flowManager.getCompletedFlowsList()
         );
@@ -425,8 +461,8 @@ public class SimulationEngine {
             return;
         }
 
-        // 随机生成1-3个车流
-        int flowCount = random.nextInt(3) + 1;
+        // 随机生成5-8个车流（增加车流数量以保持道路繁忙）
+        int flowCount = random.nextInt(4) + 5;
 
         for (int i = 0; i < flowCount; i++) {
             // 随机选择不同的入口和出口
@@ -436,15 +472,14 @@ public class SimulationEngine {
                 destination = boundaryNodes.get(random.nextInt(boundaryNodes.size()));
             } while (entry.equals(destination));
 
-            // 随机车辆数量：5-15辆
-            int numberOfCars = random.nextInt(11) + 5;
+            // 随机车辆数量：15-30辆（增加车辆数量以保持道路有明显负载）
+            int numberOfCars = random.nextInt(16) + 15;
 
             try {
                 flowManager.createFlow(entry.getId(), destination.getId(), numberOfCars);
-                System.out.println("自动生成车流: " + entry.getId() + " → " +
-                    destination.getId() + " (" + numberOfCars + "辆)");
+                log.debug("自动生成车流: {} → {} ({}辆)", entry.getId(), destination.getId(), numberOfCars);
             } catch (Exception e) {
-                System.err.println("生成车流失败: " + e.getMessage());
+                log.warn("生成车流失败: {}", e.getMessage());
             }
         }
     }
@@ -454,7 +489,7 @@ public class SimulationEngine {
      */
     public void setContinuousFlowEnabled(boolean enabled) {
         this.continuousFlowEnabled = enabled;
-        System.out.println("持续车流生成: " + (enabled ? "启用" : "禁用"));
+        log.info("持续车流生成: {}", enabled ? "启用" : "禁用");
     }
 
     /**
@@ -462,7 +497,7 @@ public class SimulationEngine {
      */
     public void setFlowGenerationInterval(long interval) {
         this.flowGenerationInterval = Math.max(10, interval); // 最小10秒
-        System.out.println("车流生成间隔设置为: " + interval + "秒");
+        log.info("车流生成间隔设置为: {}秒", interval);
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.traffic.optimization.service;
 
+import com.traffic.optimization.model.Edge;
+import com.traffic.optimization.model.Graph;
 import com.traffic.optimization.model.TrafficFlow;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
@@ -82,14 +84,15 @@ public class EfficiencyCalculator {
         }
 
         double totalTime = 0.0;
-        int totalCars = 0;
+        int flowCount = 0;
 
         for (TrafficFlow flow : completedFlows) {
-            totalTime += flow.getTravelTimeCounter() * flow.getNumberOfCars();
-            totalCars += flow.getNumberOfCars();
+            // travelTimeCounter 已经是该 flow 的总旅行时间（秒），无需再乘车辆数
+            totalTime += flow.getTravelTimeCounter();
+            flowCount++;
         }
 
-        return totalCars > 0 ? totalTime / totalCars : 0.0;
+        return flowCount > 0 ? totalTime / flowCount : 0.0;
     }
 
     /**
@@ -115,9 +118,21 @@ public class EfficiencyCalculator {
     }
 
     /**
-     * 计算综合性能指标
+     * 计算综合性能指标（基础版本，无 Graph 上下文）
      */
     public PerformanceMetrics calculatePerformanceMetrics(
+            List<TrafficFlow> activeFlows,
+            List<TrafficFlow> completedFlows) {
+        return calculatePerformanceMetrics(null, activeFlows, completedFlows);
+    }
+
+    /**
+     * 计算综合性能指标（含网络级指标）
+     * 新增 5 个网络级指标: networkOccupancy / congestedEdgeRatio / avgQueueLength
+     *                    / stoppedVehicleRate / speedReductionRatio
+     */
+    public PerformanceMetrics calculatePerformanceMetrics(
+            Graph graph,
             List<TrafficFlow> activeFlows,
             List<TrafficFlow> completedFlows) {
 
@@ -129,14 +144,100 @@ public class EfficiencyCalculator {
         int activeFlowCount = activeFlows != null ? activeFlows.size() : 0;
         int completedFlowCount = completedFlows != null ? completedFlows.size() : 0;
 
+        // Network-level metrics (new)
+        double networkOccupancy = calculateNetworkOccupancy(graph);
+        double congestedEdgeRatio = calculateCongestedEdgeRatio(graph, 0.5);
+        double avgQueueLength = calculateAverageQueueLength(graph);
+        double stoppedVehicleRate = calculateStoppedVehicleRate(activeFlows);
+        double speedReductionRatio = calculateSpeedReductionRatio(graph);
+
         return new PerformanceMetrics(
-            efficiency,
-            throughput,
-            avgTravelTime,
-            avgSpeed,
-            activeFlowCount,
-            completedFlowCount
+            efficiency, throughput, avgTravelTime, avgSpeed,
+            activeFlowCount, completedFlowCount,
+            networkOccupancy, congestedEdgeRatio, avgQueueLength,
+            stoppedVehicleRate, speedReductionRatio
         );
+    }
+
+    // ==================== Network-level metric helpers ====================
+
+    /**
+     * 网络平均占用率 [0,1]
+     */
+    double calculateNetworkOccupancy(Graph graph) {
+        if (graph == null || graph.getEdges() == null || graph.getEdges().isEmpty()) return 0.0;
+        double sum = 0.0;
+        int n = 0;
+        for (Edge e : graph.getEdges()) {
+            if (e.getTotalCapacity() > 0) {
+                sum += Math.min(1.0, e.getOccupancyRate());
+                n++;
+            }
+        }
+        return n == 0 ? 0.0 : sum / n;
+    }
+
+    /**
+     * 拥堵边比例 — 占用率超过 threshold 的边所占比例 [0,1]
+     */
+    double calculateCongestedEdgeRatio(Graph graph, double threshold) {
+        if (graph == null || graph.getEdges() == null || graph.getEdges().isEmpty()) return 0.0;
+        int total = 0;
+        int congested = 0;
+        for (Edge e : graph.getEdges()) {
+            if (e.getTotalCapacity() > 0) {
+                total++;
+                if (e.getOccupancyRate() > threshold) congested++;
+            }
+        }
+        return total == 0 ? 0.0 : (double) congested / total;
+    }
+
+    /**
+     * 全网平均排队长度（vehicles）
+     */
+    double calculateAverageQueueLength(Graph graph) {
+        if (graph == null || graph.getEdges() == null || graph.getEdges().isEmpty()) return 0.0;
+        int sum = 0;
+        int n = 0;
+        for (Edge e : graph.getEdges()) {
+            sum += e.getQueueLength();
+            n++;
+        }
+        return n == 0 ? 0.0 : (double) sum / n;
+    }
+
+    /**
+     * 停滞车辆比例 [0,1] — BLOCKED 流中的车辆数 / 活跃流总车辆数
+     */
+    double calculateStoppedVehicleRate(List<TrafficFlow> activeFlows) {
+        if (activeFlows == null || activeFlows.isEmpty()) return 0.0;
+        int blocked = 0;
+        int total = 0;
+        for (TrafficFlow f : activeFlows) {
+            int n = f.getNumberOfCars();
+            total += n;
+            if (f.getState() == TrafficFlow.FlowState.BLOCKED) {
+                blocked += n;
+            }
+        }
+        return total == 0 ? 0.0 : (double) blocked / total;
+    }
+
+    /**
+     * 速度流畅率 [0,1] — 全网 actualSpeed 总和 / speedLimit 总和（值越高越流畅）
+     */
+    double calculateSpeedReductionRatio(Graph graph) {
+        if (graph == null || graph.getEdges() == null || graph.getEdges().isEmpty()) return 0.0;
+        double sumActual = 0.0;
+        double sumLimit = 0.0;
+        for (Edge e : graph.getEdges()) {
+            if (e.getSpeedLimit() > 0) {
+                sumActual += e.getActualSpeed();
+                sumLimit += e.getSpeedLimit();
+            }
+        }
+        return sumLimit == 0 ? 0.0 : sumActual / sumLimit;
     }
 
     /**
@@ -190,6 +291,7 @@ public class EfficiencyCalculator {
      */
     @Getter
     public static class PerformanceMetrics {
+        // Legacy fields
         private double efficiency;           // 效率值
         private int throughput;              // 吞吐量（完成的车辆数）
         private double avgTravelTime;        // 平均旅行时间（秒）
@@ -198,23 +300,50 @@ public class EfficiencyCalculator {
         private int completedFlowCount;      // 已完成流数量
         private long timestamp;              // 时间戳
 
+        // Network-level metrics (new)
+        private double networkOccupancy;     // [0,1] 全网平均占用率
+        private double congestedEdgeRatio;   // [0,1] 拥堵边比例（occupancy > 0.5）
+        private double avgQueueLength;       // 全网平均排队长度
+        private double stoppedVehicleRate;   // [0,1] 停滞车辆比例
+        private double speedReductionRatio;  // [0,1] 速度流畅率（越高越好）
+
+        /** Legacy constructor — for backward compatibility */
         public PerformanceMetrics(double efficiency, int throughput,
                                 double avgTravelTime, double avgSpeed,
                                 int activeFlowCount, int completedFlowCount) {
+            this(efficiency, throughput, avgTravelTime, avgSpeed,
+                 activeFlowCount, completedFlowCount,
+                 0.0, 0.0, 0.0, 0.0, 0.0);
+        }
+
+        /** Extended constructor with network-level metrics */
+        public PerformanceMetrics(double efficiency, int throughput,
+                                double avgTravelTime, double avgSpeed,
+                                int activeFlowCount, int completedFlowCount,
+                                double networkOccupancy, double congestedEdgeRatio,
+                                double avgQueueLength, double stoppedVehicleRate,
+                                double speedReductionRatio) {
             this.efficiency = efficiency;
             this.throughput = throughput;
             this.avgTravelTime = avgTravelTime;
             this.avgSpeed = avgSpeed;
             this.activeFlowCount = activeFlowCount;
             this.completedFlowCount = completedFlowCount;
+            this.networkOccupancy = networkOccupancy;
+            this.congestedEdgeRatio = congestedEdgeRatio;
+            this.avgQueueLength = avgQueueLength;
+            this.stoppedVehicleRate = stoppedVehicleRate;
+            this.speedReductionRatio = speedReductionRatio;
             this.timestamp = System.currentTimeMillis();
         }
 
         @Override
         public String toString() {
             return String.format(
-                "效率: %.2f | 吞吐量: %d | 平均时间: %.1fs | 平均速度: %.1fkm/h | 活跃: %d | 完成: %d",
-                efficiency, throughput, avgTravelTime, avgSpeed, activeFlowCount, completedFlowCount
+                "效率: %.2f | 吞吐量: %d | 平均时间: %.1fs | 平均速度: %.1fkm/h | 活跃: %d | 完成: %d | 占用: %.0f%% | 拥堵边: %.0f%% | 队列: %.1f | 停滞: %.0f%% | 流畅: %.0f%%",
+                efficiency, throughput, avgTravelTime, avgSpeed, activeFlowCount, completedFlowCount,
+                networkOccupancy * 100, congestedEdgeRatio * 100, avgQueueLength,
+                stoppedVehicleRate * 100, speedReductionRatio * 100
             );
         }
     }

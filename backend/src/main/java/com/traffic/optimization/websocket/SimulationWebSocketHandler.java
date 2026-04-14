@@ -2,6 +2,8 @@ package com.traffic.optimization.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.traffic.optimization.service.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -19,6 +21,8 @@ import java.util.Map;
 @Component
 @EnableScheduling
 public class SimulationWebSocketHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(SimulationWebSocketHandler.class);
 
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
@@ -57,7 +61,7 @@ public class SimulationWebSocketHandler {
 
             messagingTemplate.convertAndSend("/topic/simulation", data);
         } catch (Exception e) {
-            System.err.println("WebSocket广播错误: " + e.getMessage());
+            log.error("WebSocket广播错误: {}", e.getMessage());
         }
     }
 
@@ -74,7 +78,7 @@ public class SimulationWebSocketHandler {
             EfficiencyCalculator.PerformanceMetrics metrics = simulationEngine.getCurrentMetrics();
             messagingTemplate.convertAndSend("/topic/metrics", metrics);
         } catch (Exception e) {
-            System.err.println("指标推送错误: " + e.getMessage());
+            log.error("指标推送错误: {}", e.getMessage());
         }
     }
 }

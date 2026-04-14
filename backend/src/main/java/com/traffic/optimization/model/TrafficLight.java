@@ -3,7 +3,7 @@ package com.traffic.optimization.model;
 import lombok.Data;
 
 /**
- * 交通信号灯类
+ * 交通信号灯类 - 支持多相位、全红间隔和可配置周期
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -20,12 +20,12 @@ public class TrafficLight {
     private SignalDirection currentDirection;
 
     /**
-     * 当前信号状态（红灯/绿灯/黄灯）
+     * 当前信号状态（红灯/绿灯/黄灯/全红）
      */
     private SignalState currentState;
 
     /**
-     * 绿灯时长（秒）
+     * 绿灯时长（秒）- 可通过优化算法动态调整
      */
     private int greenDuration;
 
@@ -40,21 +40,52 @@ public class TrafficLight {
     private int redDuration;
 
     /**
+     * 全红间隔时长（秒）- 所有方向红灯的安全间隔
+     */
+    private int allRedDuration;
+
+    /**
      * 当前状态剩余时间（秒）
      */
     private int remainingTime;
 
     /**
+     * 信号偏移量（秒）- 用于绿波协调
+     */
+    private int offset;
+
+    /**
+     * 累计已服务车辆数（用于效率分析）
+     */
+    private long totalServedVehicles;
+
+    /**
      * 构造函数 - 默认配置
      */
     public TrafficLight(String id) {
+        this(id, 30, 3, 2);
+    }
+
+    /**
+     * 构造函数 - 自定义配置
+     *
+     * @param id            信号灯ID
+     * @param greenDuration 绿灯时长（秒）
+     * @param yellowDuration 黄灯时长（秒）
+     * @param allRedDuration 全红间隔时长（秒）
+     */
+    public TrafficLight(String id, int greenDuration, int yellowDuration, int allRedDuration) {
         this.id = id;
         this.currentDirection = SignalDirection.EAST_WEST;
         this.currentState = SignalState.GREEN;
-        this.greenDuration = 30;
-        this.yellowDuration = 3;
-        this.redDuration = 33; // 另一方向的绿灯+黄灯时间
+        this.greenDuration = greenDuration;
+        this.yellowDuration = yellowDuration;
+        this.allRedDuration = allRedDuration;
+        // 红灯时长 = 对向绿灯 + 黄灯 + 全红
+        this.redDuration = greenDuration + yellowDuration + allRedDuration;
         this.remainingTime = greenDuration;
+        this.offset = 0;
+        this.totalServedVehicles = 0;
     }
 
     /**
@@ -70,6 +101,7 @@ public class TrafficLight {
 
     /**
      * 切换信号状态
+     * 状态机: GREEN -> YELLOW -> ALL_RED -> RED -> GREEN
      */
     private void switchState() {
         switch (currentState) {
@@ -78,12 +110,20 @@ public class TrafficLight {
                 remainingTime = yellowDuration;
                 break;
             case YELLOW:
+                if (allRedDuration > 0) {
+                    currentState = SignalState.ALL_RED;
+                    remainingTime = allRedDuration;
+                } else {
+                    // 无全红间隔，直接切换
+                    currentState = SignalState.RED;
+                    remainingTime = redDuration;
+                    switchDirection();
+                }
+                break;
+            case ALL_RED:
                 currentState = SignalState.RED;
                 remainingTime = redDuration;
-                // 切换方向
-                currentDirection = (currentDirection == SignalDirection.EAST_WEST)
-                    ? SignalDirection.NORTH_SOUTH
-                    : SignalDirection.EAST_WEST;
+                switchDirection();
                 break;
             case RED:
                 currentState = SignalState.GREEN;
@@ -93,18 +133,46 @@ public class TrafficLight {
     }
 
     /**
-     * 检查指定方向是否可以通行
+     * 切换通行方向
      */
-    public boolean canPass(SignalDirection direction) {
-        return currentDirection == direction && currentState == SignalState.GREEN;
+    private void switchDirection() {
+        currentDirection = (currentDirection == SignalDirection.EAST_WEST)
+            ? SignalDirection.NORTH_SOUTH
+            : SignalDirection.EAST_WEST;
     }
 
     /**
-     * 调整绿灯时长（用于优化）
+     * 检查指定方向是否可以通行
+     * 绿灯可通行，黄灯也可通行（模拟实际中的黄灯通行）
+     */
+    public boolean canPass(SignalDirection direction) {
+        if (currentDirection != direction) {
+            return false;
+        }
+        return currentState == SignalState.GREEN || currentState == SignalState.YELLOW;
+    }
+
+    /**
+     * 调整绿灯时长（用于优化算法）
      */
     public void adjustGreenDuration(int newDuration) {
-        this.greenDuration = Math.max(10, Math.min(60, newDuration)); // 限制在10-60秒
-        this.redDuration = greenDuration + yellowDuration;
+        this.greenDuration = Math.max(10, Math.min(90, newDuration)); // 限制在10-90秒
+        this.redDuration = greenDuration + yellowDuration + allRedDuration;
+    }
+
+    /**
+     * 获取完整周期时长（秒）
+     * 一个完整周期 = (绿灯 + 黄灯 + 全红) × 2 个方向
+     */
+    public int getCycleLength() {
+        return (greenDuration + yellowDuration + allRedDuration) * 2;
+    }
+
+    /**
+     * 记录服务的车辆数
+     */
+    public void recordServedVehicles(int count) {
+        this.totalServedVehicles += count;
     }
 
     /**
@@ -119,9 +187,10 @@ public class TrafficLight {
      * 信号状态枚举
      */
     public enum SignalState {
-        RED,    // 红灯
-        YELLOW, // 黄灯
-        GREEN   // 绿灯
+        RED,     // 红灯
+        YELLOW,  // 黄灯
+        GREEN,   // 绿灯
+        ALL_RED  // 全红（安全间隔）
     }
 
     @Override
@@ -131,6 +200,7 @@ public class TrafficLight {
                 ", direction=" + currentDirection +
                 ", state=" + currentState +
                 ", remaining=" + remainingTime + "s" +
+                ", cycle=" + getCycleLength() + "s" +
                 '}';
     }
 }

@@ -38,3 +38,5 @@ out/
 # Logs
 logs/
 *.log
+.claude/
+target/

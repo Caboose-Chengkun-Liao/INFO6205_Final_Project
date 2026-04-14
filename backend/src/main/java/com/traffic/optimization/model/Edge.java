@@ -100,28 +100,37 @@ public class Edge {
     }
 
     /**
-     * 获取实际速度（考虑拥堵影响）
-     * 根据道路占用率动态调整速度
+     * 获取当前排队长度（vehicleQueue 大小）
+     * 单独暴露成 int，避免序列化整个 queue 对象
      */
+    public int getQueueLength() {
+        return vehicleQueue == null ? 0 : vehicleQueue.size();
+    }
+
+    /**
+     * BPR (Bureau of Public Roads) 速度-流量模型
+     *
+     * 公式: speed = freeFlowSpeed / (1 + α × (V/C)^β)
+     * - α = 0.15 (标准参数，控制拥堵灵敏度)
+     * - β = 4.0  (标准参数，控制速度衰减的陡峭程度)
+     * - V/C = volume/capacity 比 (即 occupancyRate)
+     *
+     * 相比原来的阶梯式衰减，BPR 提供平滑连续的速度变化，
+     * 更符合真实交通流理论 (Highway Capacity Manual)
+     */
+    private static final double BPR_ALPHA = 0.15;
+    private static final double BPR_BETA = 4.0;
+    private static final double MIN_SPEED_RATIO = 0.1; // 最低速度不低于限速的10%
+
     public double getActualSpeed() {
-        double occupancyRate = getOccupancyRate();
+        double vcRatio = getOccupancyRate(); // V/C ratio
 
-        if (occupancyRate >= 0.9) {
-            // 严重拥堵：速度降至30%
-            return speedLimit * 0.3;
-        } else if (occupancyRate >= 0.75) {
-            // 高拥堵：速度降至50%
-            return speedLimit * 0.5;
-        } else if (occupancyRate >= 0.5) {
-            // 中等拥堵：速度降至75%
-            return speedLimit * 0.75;
-        } else if (occupancyRate >= 0.25) {
-            // 轻微拥堵：速度降至90%
-            return speedLimit * 0.9;
-        }
+        // BPR 公式
+        double speedReduction = 1.0 + BPR_ALPHA * Math.pow(vcRatio, BPR_BETA);
+        double actualSpeed = speedLimit / speedReduction;
 
-        // 畅通：正常速度
-        return speedLimit;
+        // 确保最低速度
+        return Math.max(actualSpeed, speedLimit * MIN_SPEED_RATIO);
     }
 
     /**
@@ -157,12 +166,23 @@ public class Edge {
     }
 
     /**
-     * 移除车辆从道路
+     * 移除指定的交通流从道路（确保移除正确的 flow）
+     */
+    public boolean removeVehicle(TrafficFlow flow) {
+        boolean removed = vehicleQueue.remove(flow);
+        if (removed) {
+            currentVehicleCount = Math.max(0, currentVehicleCount - flow.getNumberOfCars());
+        }
+        return removed;
+    }
+
+    /**
+     * 移除队首车辆从道路（兼容旧接口）
      */
     public TrafficFlow removeVehicle() {
         TrafficFlow flow = vehicleQueue.poll();
         if (flow != null) {
-            currentVehicleCount -= flow.getNumberOfCars();
+            currentVehicleCount = Math.max(0, currentVehicleCount - flow.getNumberOfCars());
         }
         return flow;
     }

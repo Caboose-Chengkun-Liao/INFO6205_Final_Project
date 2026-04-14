@@ -1,13 +1,15 @@
 .metrics-chart {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--apple-surface);
+  border-radius: var(--apple-radius-lg);
+  padding: 28px 32px;
+  box-shadow: var(--apple-shadow-sm);
+  border: 1px solid var(--apple-border);
 }
 
 .metrics-chart h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 1.5rem;
+  margin: 0 0 20px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--apple-text);
+  letter-spacing: -0.26px;
 }

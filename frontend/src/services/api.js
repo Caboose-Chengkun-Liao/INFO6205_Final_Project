@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -32,6 +32,10 @@ export const simulationAPI = {
   // 信号灯控制
   getSignals: () => api.get('/simulation/signals'),
   setSignalMode: (mode) => api.post(`/simulation/signals/mode?mode=${mode}`),
+
+  // 算法比较
+  compareAlgorithms: (startId, endId) =>
+    api.get(`/simulation/pathfind/compare?start=${startId}&end=${endId}`),
 };
 
 export default api;

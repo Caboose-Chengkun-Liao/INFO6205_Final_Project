@@ -98,15 +98,15 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
 
   return (
     <div className="control-panel">
-      <h2>仿真控制面板</h2>
+      <h2>Simulation Control</h2>
 
       <div className="status-display">
         <div className="status-item">
-          <span className="label">状态:</span>
+          <span className="label">Status</span>
           <span className={`value state-${state.toLowerCase()}`}>{state}</span>
         </div>
         <div className="status-item">
-          <span className="label">仿真时间:</span>
+          <span className="label">Time</span>
           <span className="value">{formatTime(currentTime)}</span>
         </div>
       </div>
@@ -117,7 +117,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state !== 'STOPPED'}
           className="btn btn-primary"
         >
-          初始化
+          Initialize
         </button>
 
         <button
@@ -125,7 +125,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state === 'RUNNING' || state === 'STOPPED'}
           className="btn btn-success"
         >
-          启动
+          Start
         </button>
 
         <button
@@ -133,7 +133,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state !== 'RUNNING'}
           className="btn btn-warning"
         >
-          暂停
+          Pause
         </button>
 
         <button
@@ -141,7 +141,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state === 'STOPPED'}
           className="btn btn-danger"
         >
-          停止
+          Stop
         </button>
 
         <button
@@ -149,7 +149,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
           disabled={loading || state === 'STOPPED'}
           className="btn btn-secondary"
         >
-          重置
+          Reset
         </button>
       </div>
     </div>

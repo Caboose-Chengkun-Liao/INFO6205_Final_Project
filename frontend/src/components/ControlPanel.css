@@ -1,121 +1,126 @@
 .control-panel {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--apple-surface);
+  border-radius: var(--apple-radius-lg);
+  padding: 28px 32px;
+  box-shadow: var(--apple-shadow-sm);
+  border: 1px solid var(--apple-border);
 }
 
 .control-panel h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 1.5rem;
+  margin: 0 0 20px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--apple-text);
+  letter-spacing: -0.26px;
 }
 
 .status-display {
   display: flex;
-  gap: 30px;
-  margin-bottom: 20px;
-  padding: 15px;
-  background: #f5f5f5;
-  border-radius: 6px;
+  gap: 32px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: var(--apple-bg);
+  border-radius: var(--apple-radius-sm);
+  border: 1px solid var(--apple-border);
 }
 
 .status-item {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 4px;
 }
 
 .status-item .label {
-  font-size: 0.9rem;
-  color: #666;
+  font-size: 13px;
+  color: var(--apple-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .status-item .value {
-  font-size: 1.2rem;
-  font-weight: bold;
-  color: #333;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--apple-text);
+  font-family: var(--apple-mono);
 }
 
-.state-running {
-  color: #28a745;
-}
-
-.state-paused {
-  color: #ffc107;
-}
-
-.state-stopped {
-  color: #dc3545;
-}
-
-.state-initialized {
-  color: #17a2b8;
-}
+.state-running { color: var(--apple-green) !important; }
+.state-paused { color: var(--apple-orange) !important; }
+.state-stopped { color: var(--apple-red) !important; }
+.state-initialized { color: var(--apple-blue) !important; }
 
 .control-buttons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .btn {
-  padding: 10px 20px;
+  padding: 10px 24px;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s;
+  border-radius: 980px;
+  font-size: 15px;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--apple-font);
+  letter-spacing: -0.01em;
+}
+
+.btn:hover:not(:disabled) {
+  transform: scale(1.03);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: not-allowed;
+  transform: none;
 }
 
 .btn-primary {
-  background: #007bff;
+  background: var(--apple-blue);
   color: white;
 }
-
 .btn-primary:hover:not(:disabled) {
-  background: #0056b3;
+  background: var(--apple-blue-hover);
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.3);
 }
 
 .btn-success {
-  background: #28a745;
+  background: var(--apple-green);
   color: white;
 }
-
 .btn-success:hover:not(:disabled) {
-  background: #218838;
+  box-shadow: 0 4px 12px rgba(48, 209, 88, 0.3);
 }
 
 .btn-warning {
-  background: #ffc107;
-  color: #333;
+  background: var(--apple-yellow);
+  color: var(--apple-text);
 }
-
 .btn-warning:hover:not(:disabled) {
-  background: #e0a800;
+  box-shadow: 0 4px 12px rgba(255, 214, 10, 0.3);
 }
 
 .btn-danger {
-  background: #dc3545;
+  background: var(--apple-red);
   color: white;
 }
-
 .btn-danger:hover:not(:disabled) {
-  background: #c82333;
+  box-shadow: 0 4px 12px rgba(255, 69, 58, 0.3);
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  background: var(--apple-bg);
+  color: var(--apple-text);
+  border: 1px solid var(--apple-border);
 }
-
 .btn-secondary:hover:not(:disabled) {
-  background: #5a6268;
+  background: #E8E8ED;
+  box-shadow: var(--apple-shadow-sm);
 }

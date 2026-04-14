@@ -1,12 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import api from '../services/api';
 import websocketService from '../services/websocket';
+import { computeCoordBounds, mapToSVG, colors, getRoadColor, getVehicleColor, getSignalColor } from '../utils/mapUtils';
 
-/**
- * Professional-grade Map Visualization Component
- * Arlington, VA Traffic Network with Real-time Vehicle Tracking
- */
-const MapVisualization = () => {
+const MapVisualization = ({ signals = [] }) => {
   const [graphData, setGraphData] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,19 +14,17 @@ const MapVisualization = () => {
   const svgRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Canvas dimensions - optimized for web display
-  const svgWidth = 1600;  // 适配标准宽屏显示器
-  const svgHeight = 800;  // 减小高度以完全展示
+  const svgWidth = 1600;
+  const svgHeight = 800;
   const padding = 60;
 
   useEffect(() => {
     loadGraphData();
 
-    // Subscribe to WebSocket for real-time updates
-    const unsubscribe = websocketService.subscribe('/topic/simulation', (data) => {
+    websocketService.subscribe('/topic/simulation', (data) => {
       if (data.activeFlows) {
         const vehiclePositions = data.activeFlows
-          .filter(flow => flow.currentEdge)
+          .filter(flow => flow.currentEdge && flow.currentEdge.fromNode && flow.currentEdge.toNode)
           .map(flow => ({
             flowId: flow.flowId,
             numberOfCars: flow.numberOfCars,
@@ -37,131 +32,76 @@ const MapVisualization = () => {
             currentEdge: flow.currentEdge.id,
             from: flow.currentEdge.fromNode.id,
             to: flow.currentEdge.toNode.id,
-            progress: Math.min(1.0, flow.timeOnCurrentEdge / (flow.currentEdge.idealTravelTime * 60))
+            progress: Math.min(1.0, flow.timeOnCurrentEdge / ((flow.currentEdge.idealTravelTime || 1) * 60))
           }));
         setVehicles(vehiclePositions);
       }
     });
 
-    // 定期重新加载graph数据以获取实时的道路负载
     const graphRefreshInterval = setInterval(() => {
-      loadGraphData(false); // 后台刷新，不显示loading
-    }, 3000); // 每3秒更新一次
+      loadGraphData(false);
+    }, 5000);
 
     return () => {
-      unsubscribe && unsubscribe();
+      websocketService.unsubscribe('/topic/simulation');
       clearInterval(graphRefreshInterval);
     };
   }, []);
 
   const loadGraphData = async (showLoading = true) => {
     try {
-      if (showLoading) {
-        setLoading(true);
-      }
+      if (showLoading) setLoading(true);
       const response = await api.get('/simulation/graph');
       setGraphData(response.data);
       setError(null);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load map data');
     } finally {
-      if (showLoading) {
-        setLoading(false);
-      }
+      if (showLoading) setLoading(false);
     }
   };
 
-  // Coordinate transformation with zoom and pan
-  const mapToSVG = (x, y) => {
-    if (!graphData) return { x: 0, y: 0 };
+  const coordBounds = useMemo(() => {
+    if (!graphData || !graphData.nodes) return null;
+    return computeCoordBounds(graphData.nodes);
+  }, [graphData]);
 
-    const nodes = graphData.nodes;
-    const xCoords = nodes.map(n => n.x);
-    const yCoords = nodes.map(n => n.y);
-    const minX = Math.min(...xCoords);
-    const maxX = Math.max(...xCoords);
-    const minY = Math.min(...yCoords);
-    const maxY = Math.max(...yCoords);
+  const toSVG = useCallback((x, y) => {
+    return mapToSVG(x, y, coordBounds, svgWidth, svgHeight, padding);
+  }, [coordBounds]);
 
-    // Map to SVG coordinates with Y-axis inversion
-    const svgX = padding + ((x - minX) / (maxX - minX)) * (svgWidth - 2 * padding);
-    const svgY = svgHeight - padding - ((y - minY) / (maxY - minY)) * (svgHeight - 2 * padding);
-
-    return { x: svgX, y: svgY };
-  };
-
-  // Professional color scheme
-  const colors = {
-    intersection: '#2563EB',      // Blue
-    boundary: '#DC2626',          // Red
-    roadNormal: '#94A3B8',        // Slate gray
-    roadMedium: '#F59E0B',        // Amber
-    roadHeavy: '#EF4444',         // Red
-    vehicleActive: '#10B981',     // Green
-    vehicleBlocked: '#EF4444',    // Red
-    vehicleWaiting: '#F59E0B',    // Amber
-    background: '#F8FAFC',        // Light slate
-    gridLines: '#E2E8F0',         // Light gray
-    text: '#1E293B',              // Dark slate
-    textSecondary: '#64748B'      // Medium slate
-  };
-
-  // Get road color based on load
-  const getRoadColor = (edge) => {
-    if (!edge.distance) return colors.roadNormal;
-    const capacity = edge.distance * 50; // 50 cars/km
-    const loadRatio = edge.currentLoad / capacity;
-
-    if (loadRatio > 0.8) return colors.roadHeavy;
-    if (loadRatio > 0.5) return colors.roadMedium;
-    return colors.roadNormal;
-  };
-
-  // Get vehicle color based on state
-  const getVehicleColor = (state) => {
-    switch (state) {
-      case 'BLOCKED': return colors.vehicleBlocked;
-      case 'ACTIVE': return colors.vehicleActive;
-      case 'WAITING': return colors.vehicleWaiting;
-      default: return colors.vehicleActive;
-    }
-  };
-
-  // 地图固定 - 移除拖拽和缩放功能
-
-  // Calculate edge statistics
   const getEdgeStats = (edge) => {
     if (!edge.distance) return null;
     const capacity = edge.distance * 50;
     const currentLoad = edge.currentLoad || 0;
     const loadPercent = ((currentLoad / capacity) * 100).toFixed(1);
-    return {
-      capacity,
-      loadPercent,
-      vehicles: currentLoad
-    };
+    return { capacity, loadPercent, vehicles: currentLoad };
+  };
+
+  // Find signal for a node
+  const getNodeSignal = (nodeId) => {
+    return signals.find(s => s.nodeId === nodeId || s.nodeId === String(nodeId));
   };
 
   if (loading) {
     return (
-      <div style={styles.container}>
-        <div style={styles.loadingContainer}>
-          <div style={styles.spinner}></div>
-          <p style={styles.loadingText}>Loading Arlington Traffic Network...</p>
+      <div style={s.container}>
+        <div style={s.loadingContainer}>
+          <div style={s.spinner}></div>
+          <p style={s.loadingText}>Loading Arlington Traffic Network...</p>
         </div>
+        <style>{spinnerCSS}</style>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.container}>
-        <div style={styles.errorContainer}>
-          <div style={styles.errorIcon}>⚠️</div>
-          <p style={styles.errorText}>{error}</p>
-          <button onClick={loadGraphData} style={styles.retryButton}>
-            Retry
-          </button>
+      <div style={s.container}>
+        <div style={s.errorContainer}>
+          <p style={s.errorIcon}>!</p>
+          <p style={s.errorText}>{error}</p>
+          <button onClick={loadGraphData} style={s.retryButton}>Retry</button>
         </div>
       </div>
     );
@@ -170,164 +110,193 @@ const MapVisualization = () => {
   if (!graphData) return null;
 
   return (
-    <div style={styles.container} ref={containerRef}>
-      {/* Header with title and real-time stats */}
-      <div style={styles.header}>
-        <div style={styles.titleSection}>
-          <h2 style={styles.title}>Arlington, VA - Traffic Network Visualization</h2>
-          <p style={styles.subtitle}>Real-time traffic flow monitoring and optimization</p>
+    <div style={s.container} ref={containerRef}>
+      <div style={s.header}>
+        <div style={s.titleSection}>
+          <h2 style={s.title}>Arlington, VA — Traffic Network</h2>
+          <p style={s.subtitle}>Real-time traffic flow monitoring and optimization</p>
         </div>
-        <div style={styles.statsBar}>
-          <div style={styles.statCard}>
-            <div style={styles.statValue}>{graphData.nodes.length}</div>
-            <div style={styles.statLabel}>Nodes</div>
+        <div style={s.statsBar}>
+          <div style={s.statCard}>
+            <div style={s.statValue}>{graphData.nodes.length}</div>
+            <div style={s.statLabel}>Nodes</div>
           </div>
-          <div style={styles.statCard}>
-            <div style={styles.statValue}>{graphData.edges.length}</div>
-            <div style={styles.statLabel}>Roads</div>
+          <div style={s.statCard}>
+            <div style={s.statValue}>{graphData.edges.length}</div>
+            <div style={s.statLabel}>Roads</div>
           </div>
-          <div style={styles.statCard}>
-            <div style={styles.statValue}>{vehicles.length}</div>
-            <div style={styles.statLabel}>Active Flows</div>
+          <div style={s.statCard}>
+            <div style={s.statValue}>{vehicles.length}</div>
+            <div style={s.statLabel}>Active Flows</div>
           </div>
         </div>
       </div>
 
-      {/* Main map container */}
-      <div style={styles.mapWrapper}>
+      <div style={s.mapWrapper}>
         {/* Legend */}
-        <div style={styles.legend}>
-          <h4 style={styles.legendTitle}>Legend</h4>
-          <div style={styles.legendItems}>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendDot, background: colors.intersection}}></div>
-              <span style={styles.legendText}>Intersection</span>
+        <div style={s.legend}>
+          <h4 style={s.legendTitle}>Legend</h4>
+          <div style={s.legendItems}>
+            <div style={s.legendItem}>
+              <div style={{...s.legendDot, background: colors.intersection}}></div>
+              <span style={s.legendText}>Intersection</span>
             </div>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendDot, background: colors.boundary}}></div>
-              <span style={styles.legendText}>Boundary</span>
+            <div style={s.legendItem}>
+              <div style={{...s.legendDot, background: colors.boundary}}></div>
+              <span style={s.legendText}>Boundary</span>
             </div>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendDot, background: colors.vehicleActive}}></div>
-              <span style={styles.legendText}>Active Vehicle</span>
+            <div style={s.legendItem}>
+              <div style={{...s.legendDot, background: colors.vehicleActive}}></div>
+              <span style={s.legendText}>Active Vehicle</span>
             </div>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendDot, background: colors.vehicleBlocked}}></div>
-              <span style={styles.legendText}>Blocked Vehicle</span>
+            <div style={s.legendItem}>
+              <div style={{...s.legendDot, background: colors.vehicleBlocked}}></div>
+              <span style={s.legendText}>Blocked Vehicle</span>
             </div>
-            <div style={styles.legendSeparator}></div>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendBar, background: colors.roadNormal}}></div>
-              <span style={styles.legendText}>Light Traffic</span>
+            <div style={s.legendSep}></div>
+            <div style={s.legendItem}>
+              <div style={{...s.legendBar, background: colors.roadNormal}}></div>
+              <span style={s.legendText}>Light Traffic</span>
             </div>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendBar, background: colors.roadMedium}}></div>
-              <span style={styles.legendText}>Medium Traffic</span>
+            <div style={s.legendItem}>
+              <div style={{...s.legendBar, background: colors.roadMedium}}></div>
+              <span style={s.legendText}>Medium Traffic</span>
             </div>
-            <div style={styles.legendItem}>
-              <div style={{...styles.legendBar, background: colors.roadHeavy}}></div>
-              <span style={styles.legendText}>Heavy Traffic</span>
+            <div style={s.legendItem}>
+              <div style={{...s.legendBar, background: colors.roadHeavy}}></div>
+              <span style={s.legendText}>Heavy Traffic</span>
+            </div>
+            <div style={s.legendSep}></div>
+            <div style={s.legendItem}>
+              <svg width="14" height="30" viewBox="0 0 14 30">
+                <rect width="14" height="30" rx="3" fill="#1D1D1F" opacity="0.85"/>
+                <circle cx="7" cy="6" r="3" fill={colors.signalRed}/>
+                <circle cx="7" cy="15" r="3" fill={colors.signalOff}/>
+                <circle cx="7" cy="24" r="3" fill={colors.signalOff}/>
+              </svg>
+              <span style={s.legendText}>Traffic Signal</span>
             </div>
           </div>
         </div>
 
         {/* SVG Canvas */}
-        <svg
-          ref={svgRef}
-          width={svgWidth}
-          height={svgHeight}
-          style={styles.svg}
-        >
-          {/* Grid background */}
+        <svg ref={svgRef} viewBox={`0 0 ${svgWidth} ${svgHeight}`} style={s.svg}>
           <defs>
+            <radialGradient id="bgGrad" cx="50%" cy="50%" r="65%">
+              <stop offset="0%" stopColor="#FAFBFC"/>
+              <stop offset="100%" stopColor="#EEEEF0"/>
+            </radialGradient>
             <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-              <path d="M 50 0 L 0 0 0 50" fill="none" stroke={colors.gridLines} strokeWidth="0.5"/>
+              <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(0,0,0,0.04)" strokeWidth="0.6"/>
             </pattern>
-
-            {/* Glow effect for active elements */}
             <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
-
-            {/* Shadow for nodes */}
             <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.3"/>
+              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.12"/>
+            </filter>
+            <filter id="node-glow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="4" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
             </filter>
           </defs>
 
+          <rect width={svgWidth} height={svgHeight} fill="url(#bgGrad)"/>
           <rect width={svgWidth} height={svgHeight} fill="url(#grid)"/>
 
-          {/* Roads (Edges) */}
+          {/* Road shadows layer */}
+          <g className="road-shadows" opacity="0.08">
+            {graphData.edges.map((edge) => {
+              const fromNode = graphData.nodes.find(n => n.id === edge.from);
+              const toNode = graphData.nodes.find(n => n.id === edge.to);
+              if (!fromNode || !toNode) return null;
+              const from = toSVG(fromNode.x, fromNode.y);
+              const to = toSVG(toNode.x, toNode.y);
+              return (
+                <line key={`sh-${edge.id}`}
+                  x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                  stroke="#1D1D1F" strokeWidth="9" strokeLinecap="round"/>
+              );
+            })}
+          </g>
+
+          {/* Road fill layer */}
           <g className="roads">
             {graphData.edges.map((edge) => {
               const fromNode = graphData.nodes.find(n => n.id === edge.from);
               const toNode = graphData.nodes.find(n => n.id === edge.to);
-
               if (!fromNode || !toNode) return null;
 
-              const from = mapToSVG(fromNode.x, fromNode.y);
-              const to = mapToSVG(toNode.x, toNode.y);
+              const from = toSVG(fromNode.x, fromNode.y);
+              const to = toSVG(toNode.x, toNode.y);
               const edgeColor = getRoadColor(edge);
               const isHovered = hoveredEdge === edge.id;
               const stats = getEdgeStats(edge);
 
               return (
                 <g key={edge.id}>
-                  {/* Road line */}
+                  {/* Road fill */}
                   <line
-                    x1={from.x}
-                    y1={from.y}
-                    x2={to.x}
-                    y2={to.y}
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
                     stroke={edgeColor}
-                    strokeWidth={isHovered ? "6" : "4"}
+                    strokeWidth={isHovered ? "7" : "5"}
                     strokeLinecap="round"
-                    opacity={isHovered ? "0.9" : "0.6"}
+                    opacity={isHovered ? "0.95" : "0.7"}
                     filter={isHovered ? "url(#glow)" : ""}
                     onMouseEnter={() => setHoveredEdge(edge.id)}
                     onMouseLeave={() => setHoveredEdge(null)}
-                    style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                    style={{ cursor: 'pointer', transition: 'all 0.15s' }}
                   />
-
-                  {/* Distance label */}
-                  {edge.distance && (
+                  {/* Center highlight */}
+                  <line
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke="white" strokeWidth="1" strokeLinecap="round"
+                    opacity="0.12" pointerEvents="none"
+                  />
+                  {isHovered && stats && (
                     <text
-                      x={(from.x + to.x) / 2}
-                      y={(from.y + to.y) / 2 - 8}
-                      fontSize="11"
-                      fontWeight="500"
-                      fill={colors.text}
-                      textAnchor="middle"
-                      pointerEvents="none"
-                      style={{
-                        opacity: isHovered ? 1 : 0.7,
-                        textShadow: '0 0 3px white'
-                      }}
+                      x={(from.x + to.x) / 2} y={(from.y + to.y) / 2 - 10}
+                      fontSize="10" fontWeight="600" fill={colors.text}
+                      textAnchor="middle" pointerEvents="none"
+                      style={{ textShadow: '0 0 5px white, 0 0 10px white' }}
                     >
-                      {edge.distance.toFixed(1)} km
-                    </text>
-                  )}
-
-                  {/* Load indicator */}
-                  {stats && isHovered && (
-                    <text
-                      x={(from.x + to.x) / 2}
-                      y={(from.y + to.y) / 2 + 15}
-                      fontSize="10"
-                      fontWeight="600"
-                      fill={edgeColor}
-                      textAnchor="middle"
-                      pointerEvents="none"
-                      style={{ textShadow: '0 0 3px white' }}
-                    >
-                      Load: {stats.loadPercent}% ({stats.vehicles}/{stats.capacity.toFixed(0)})
+                      {edge.distance?.toFixed(1)} km · {stats.loadPercent}%
                     </text>
                   )}
                 </g>
+              );
+            })}
+          </g>
+
+          {/* Major road name labels */}
+          <g className="road-labels" opacity="0.2" pointerEvents="none">
+            {[
+              { label: 'WILSON BLVD', x: 6.0, y: 8.15, rot: 0 },
+              { label: 'LEE HWY', x: 5.0, y: 9.15, rot: 0 },
+              { label: 'FAIRFAX DR', x: 5.0, y: 7.15, rot: 0 },
+              { label: 'ARLINGTON BLVD (RT 50)', x: 5.5, y: 5.18, rot: 0 },
+              { label: 'COLUMBIA PIKE', x: 4.5, y: 2.68, rot: 0 },
+              { label: 'N GLEBE RD', x: 2.78, y: 6.5, rot: -90 },
+              { label: 'N COURTHOUSE RD', x: 7.28, y: 6.0, rot: -90 },
+              { label: 'N LYNN ST', x: 8.78, y: 6.0, rot: -90 },
+            ].map((rd, i) => {
+              const pos = toSVG(rd.x, rd.y);
+              return (
+                <text key={`rl-${i}`}
+                  x={pos.x} y={pos.y}
+                  fontSize="10" fontWeight="700" fill="#1D1D1F"
+                  textAnchor="middle" letterSpacing="2"
+                  transform={rd.rot ? `rotate(${rd.rot}, ${pos.x}, ${pos.y})` : undefined}
+                >
+                  {rd.label}
+                </text>
               );
             })}
           </g>
@@ -335,131 +304,97 @@ const MapVisualization = () => {
           {/* Nodes */}
           <g className="nodes">
             {graphData.nodes.map((node) => {
-              const pos = mapToSVG(node.x, node.y);
-              const color = node.type === 'INTERSECTION' ? colors.intersection : colors.boundary;
-              const radius = node.type === 'INTERSECTION' ? 10 : 8;
+              const pos = toSVG(node.x, node.y);
+              const isIntersection = node.type === 'INTERSECTION';
+              const color = isIntersection ? colors.intersection : colors.boundary;
+              const outerR = isIntersection ? 12 : 8;
+              const innerR = isIntersection ? 7 : 5;
               const isSelected = selectedNode?.id === node.id;
+              const isHoveredNode = hoveredEdge === `node-${node.id}`;
+              const signal = isIntersection ? getNodeSignal(node.id) : null;
 
               return (
-                <g key={node.id}>
-                  {/* Selection ring */}
-                  {isSelected && (
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y}
-                      r={radius + 6}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="2"
-                      opacity="0.5"
-                    />
-                  )}
-
-                  {/* Node circle */}
-                  <circle
-                    cx={pos.x}
-                    cy={pos.y}
-                    r={radius}
-                    fill={color}
-                    stroke="white"
-                    strokeWidth="2.5"
+                <g key={node.id}
+                  onMouseEnter={() => setHoveredEdge(`node-${node.id}`)}
+                  onMouseLeave={() => setHoveredEdge(null)}
+                  onClick={() => setSelectedNode(node)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {/* Outer glow ring */}
+                  <circle cx={pos.x} cy={pos.y} r={outerR}
+                    fill="none" stroke={color} strokeWidth="1.5"
+                    opacity={isSelected ? 0.6 : 0.2}/>
+                  {/* Inner filled circle */}
+                  <circle cx={pos.x} cy={pos.y} r={innerR}
+                    fill={color} stroke="white" strokeWidth="2"
                     filter="url(#shadow)"
-                    onClick={() => setSelectedNode(node)}
-                    style={{
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.setAttribute('r', radius + 2);
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.setAttribute('r', radius);
-                    }}
+                    style={{ transition: 'all 0.15s' }}
                   />
-
-                  {/* Node ID */}
+                  {/* Node ID label */}
                   <text
-                    x={pos.x}
-                    y={pos.y - radius - 8}
-                    fontSize="12"
-                    fontWeight="bold"
-                    fill={colors.text}
-                    textAnchor="middle"
-                    pointerEvents="none"
-                    style={{ textShadow: '0 0 3px white' }}
+                    x={pos.x} y={pos.y + 3.5}
+                    fontSize="8" fontWeight="700" fill="white"
+                    textAnchor="middle" pointerEvents="none"
                   >
                     {node.id}
                   </text>
-
-                  {/* Node name (for intersections only) */}
-                  {node.type === 'INTERSECTION' && (
+                  {/* Node name — only on hover */}
+                  {isHoveredNode && (
                     <text
-                      x={pos.x}
-                      y={pos.y + radius + 18}
-                      fontSize="10"
-                      fill={colors.textSecondary}
-                      textAnchor="middle"
-                      pointerEvents="none"
-                      style={{ textShadow: '0 0 3px white' }}
+                      x={pos.x} y={pos.y - outerR - 6}
+                      fontSize="10" fill={colors.text} fontWeight="600"
+                      textAnchor="middle" pointerEvents="none"
+                      style={{ textShadow: '0 0 6px white, 0 0 12px white' }}
                     >
-                      {node.name.length > 25 ? node.name.substring(0, 25) + '...' : node.name}
+                      {node.name.length > 30 ? node.name.substring(0, 30) + '...' : node.name}
                     </text>
+                  )}
+
+                  {/* Traffic Signal Light */}
+                  {signal && (
+                    <g transform={`translate(${pos.x + 14}, ${pos.y - 21})`}>
+                      <rect width="16" height="38" rx="4" fill="rgba(29,29,31,0.85)"/>
+                      <circle cx="8" cy="8" r="3.5"
+                        fill={getSignalColor(signal.currentState || signal.nsState, 'RED')}
+                        opacity={((signal.currentState || signal.nsState) === 'RED') ? 1 : 0.15}
+                      />
+                      <circle cx="8" cy="19" r="3.5"
+                        fill={getSignalColor(signal.currentState || signal.nsState, 'YELLOW')}
+                        opacity={((signal.currentState || signal.nsState) === 'YELLOW') ? 1 : 0.15}
+                      />
+                      <circle cx="8" cy="30" r="3.5"
+                        fill={getSignalColor(signal.currentState || signal.nsState, 'GREEN')}
+                        opacity={((signal.currentState || signal.nsState) === 'GREEN') ? 1 : 0.15}
+                      />
+                    </g>
                   )}
                 </g>
               );
             })}
           </g>
 
-          {/* Vehicles with animation */}
+          {/* Vehicles */}
           <g className="vehicles">
             {vehicles.map((vehicle) => {
               const fromNode = graphData.nodes.find(n => n.id === vehicle.from);
               const toNode = graphData.nodes.find(n => n.id === vehicle.to);
-
               if (!fromNode || !toNode) return null;
 
-              const from = mapToSVG(fromNode.x, fromNode.y);
-              const to = mapToSVG(toNode.x, toNode.y);
-
-              // Interpolate position
+              const from = toSVG(fromNode.x, fromNode.y);
+              const to = toSVG(toNode.x, toNode.y);
               const x = from.x + (to.x - from.x) * vehicle.progress;
               const y = from.y + (to.y - from.y) * vehicle.progress;
-
               const vehicleColor = getVehicleColor(vehicle.state);
 
               return (
                 <g key={vehicle.flowId}>
-                  {/* Vehicle marker with pulse effect */}
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r="7"
-                    fill={vehicleColor}
-                    stroke="white"
-                    strokeWidth="2"
-                    filter="url(#glow)"
-                    style={{
-                      animation: 'pulse 2s ease-in-out infinite'
-                    }}
+                  <circle cx={x} cy={y} r="6" fill={vehicleColor}
+                    stroke="white" strokeWidth="1.5" filter="url(#glow)"
                   />
-
-                  {/* Vehicle count badge */}
-                  <circle
-                    cx={x + 10}
-                    cy={y - 10}
-                    r="8"
-                    fill="white"
-                    stroke={vehicleColor}
-                    strokeWidth="2"
-                  />
-                  <text
-                    x={x + 10}
-                    y={y - 7}
-                    fontSize="10"
-                    fontWeight="bold"
-                    fill={vehicleColor}
-                    textAnchor="middle"
-                  >
+                  <circle cx={x + 9} cy={y - 9} r="7"
+                    fill="white" stroke={vehicleColor} strokeWidth="1.5"/>
+                  <text x={x + 9} y={y - 6} fontSize="9" fontWeight="700"
+                    fill={vehicleColor} textAnchor="middle">
                     {vehicle.numberOfCars}
                   </text>
                 </g>
@@ -468,40 +403,36 @@ const MapVisualization = () => {
           </g>
         </svg>
 
-        {/* Selected node details panel */}
+        {/* Selected node details */}
         {selectedNode && (
-          <div style={styles.detailsPanel}>
-            <div style={styles.detailsHeader}>
-              <h4 style={styles.detailsTitle}>Node Details</h4>
-              <button
-                onClick={() => setSelectedNode(null)}
-                style={styles.closeButton}
-              >
-                ×
+          <div style={s.detailsPanel}>
+            <div style={s.detailsHeader}>
+              <h4 style={s.detailsTitle}>Node Details</h4>
+              <button onClick={() => setSelectedNode(null)} style={s.closeButton}>
+                <span style={{fontSize: '18px', lineHeight: '1'}}>&#215;</span>
               </button>
             </div>
-            <div style={styles.detailsContent}>
-              <div style={styles.detailRow}>
-                <span style={styles.detailLabel}>ID:</span>
-                <span style={styles.detailValue}>{selectedNode.id}</span>
+            <div style={s.detailsContent}>
+              <div style={s.detailRow}>
+                <span style={s.detailLabel}>ID</span>
+                <span style={s.detailValue}>{selectedNode.id}</span>
               </div>
-              <div style={styles.detailRow}>
-                <span style={styles.detailLabel}>Name:</span>
-                <span style={styles.detailValue}>{selectedNode.name}</span>
+              <div style={s.detailRow}>
+                <span style={s.detailLabel}>Name</span>
+                <span style={s.detailValue}>{selectedNode.name}</span>
               </div>
-              <div style={styles.detailRow}>
-                <span style={styles.detailLabel}>Type:</span>
+              <div style={s.detailRow}>
+                <span style={s.detailLabel}>Type</span>
                 <span style={{
-                  ...styles.detailValue,
-                  ...styles.badge,
+                  ...s.badge,
                   background: selectedNode.type === 'INTERSECTION' ? colors.intersection : colors.boundary
                 }}>
                   {selectedNode.type}
                 </span>
               </div>
-              <div style={styles.detailRow}>
-                <span style={styles.detailLabel}>Position:</span>
-                <span style={styles.detailValue}>
+              <div style={s.detailRow}>
+                <span style={s.detailLabel}>Position</span>
+                <span style={s.detailValue}>
                   ({selectedNode.x.toFixed(1)}, {selectedNode.y.toFixed(1)})
                 </span>
               </div>
@@ -510,220 +441,212 @@ const MapVisualization = () => {
         )}
       </div>
 
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.8;
-            transform: scale(1.1);
-          }
-        }
-
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-
-        .node-circle:hover {
-          filter: url(#glow);
-        }
-      `}</style>
+      <style>{spinnerCSS}</style>
     </div>
   );
 };
 
-// Professional styles
-const styles = {
+const spinnerCSS = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+const s = {
   container: {
     width: '100%',
     background: '#FFFFFF',
-    borderRadius: '16px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-    overflow: 'hidden'
+    borderRadius: '24px',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    border: '1px solid rgba(0,0,0,0.06)',
+    overflow: 'hidden',
   },
   header: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: '#FFFFFF',
     padding: '24px 32px',
-    color: 'white'
+    borderBottom: '1px solid rgba(0,0,0,0.06)',
   },
   titleSection: {
-    marginBottom: '20px'
+    marginBottom: '16px',
   },
   title: {
     margin: 0,
-    fontSize: '28px',
-    fontWeight: '700',
-    letterSpacing: '-0.5px'
+    fontSize: '22px',
+    fontWeight: '600',
+    color: '#1D1D1F',
+    letterSpacing: '-0.26px',
   },
   subtitle: {
-    margin: '8px 0 0 0',
-    fontSize: '14px',
-    opacity: 0.9,
-    fontWeight: '400'
+    margin: '4px 0 0 0',
+    fontSize: '13px',
+    color: '#86868B',
   },
   statsBar: {
     display: 'flex',
-    gap: '16px'
+    gap: '12px',
   },
   statCard: {
-    background: 'rgba(255, 255, 255, 0.15)',
-    backdropFilter: 'blur(10px)',
+    background: '#F5F5F7',
     borderRadius: '12px',
-    padding: '16px 24px',
-    minWidth: '120px',
+    padding: '12px 20px',
+    minWidth: '100px',
     textAlign: 'center',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
+    border: '1px solid rgba(0,0,0,0.04)',
   },
   statValue: {
-    fontSize: '32px',
+    fontSize: '24px',
     fontWeight: '700',
-    lineHeight: '1'
+    color: '#0071E3',
+    lineHeight: '1',
   },
   statLabel: {
-    fontSize: '12px',
-    marginTop: '8px',
-    opacity: 0.9,
+    fontSize: '11px',
+    marginTop: '4px',
+    color: '#86868B',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    fontWeight: '500'
+    letterSpacing: '0.4px',
+    fontWeight: '500',
   },
   mapWrapper: {
     position: 'relative',
     padding: '24px',
-    background: '#F8FAFC',
-    minHeight: '850px',  // 适配800px的SVG高度 + padding
+    background: '#F5F5F7',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'visible'  // 改为visible以完全展示内容
+    overflow: 'visible',
   },
   svg: {
+    width: '100%',
+    height: 'auto',
     background: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-    transformOrigin: 'center center',
-    transition: 'transform 0.1s ease-out',
-    userSelect: 'none'
+    borderRadius: '16px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+    userSelect: 'none',
   },
   legend: {
     position: 'absolute',
     top: '32px',
     left: '32px',
-    background: 'white',
-    borderRadius: '12px',
-    padding: '20px',
-    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-    minWidth: '200px',
-    zIndex: 10
+    background: 'rgba(255,255,255,0.85)',
+    backdropFilter: 'saturate(180%) blur(20px)',
+    WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+    borderRadius: '16px',
+    padding: '16px 20px',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(255,255,255,0.5)',
+    minWidth: '180px',
+    zIndex: 10,
   },
   legendTitle: {
-    margin: '0 0 16px 0',
-    fontSize: '16px',
+    margin: '0 0 12px 0',
+    fontSize: '13px',
     fontWeight: '600',
-    color: '#1E293B'
+    color: '#1D1D1F',
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
   },
   legendItems: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px'
+    gap: '8px',
   },
   legendItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px'
+    gap: '8px',
   },
   legendDot: {
-    width: '14px',
-    height: '14px',
+    width: '10px',
+    height: '10px',
     borderRadius: '50%',
-    border: '2px solid white',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+    flexShrink: 0,
   },
   legendBar: {
-    width: '30px',
-    height: '4px',
-    borderRadius: '2px'
+    width: '24px',
+    height: '3px',
+    borderRadius: '2px',
+    flexShrink: 0,
   },
   legendText: {
-    fontSize: '13px',
-    color: '#64748B',
-    fontWeight: '500'
+    fontSize: '12px',
+    color: '#86868B',
+    fontWeight: '500',
   },
-  legendSeparator: {
+  legendSep: {
     height: '1px',
-    background: '#E2E8F0',
-    margin: '4px 0'
+    background: 'rgba(0,0,0,0.06)',
+    margin: '2px 0',
   },
   detailsPanel: {
     position: 'absolute',
     bottom: '32px',
     right: '32px',
-    background: 'white',
-    borderRadius: '12px',
-    padding: '0',
-    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-    minWidth: '300px',
+    background: 'rgba(255,255,255,0.9)',
+    backdropFilter: 'saturate(180%) blur(20px)',
+    WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+    borderRadius: '16px',
+    boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+    border: '1px solid rgba(255,255,255,0.5)',
+    minWidth: '280px',
     zIndex: 10,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   detailsHeader: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white',
     padding: '16px 20px',
+    borderBottom: '1px solid rgba(0,0,0,0.06)',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   detailsTitle: {
     margin: 0,
-    fontSize: '16px',
-    fontWeight: '600'
+    fontSize: '15px',
+    fontWeight: '600',
+    color: '#1D1D1F',
   },
   closeButton: {
-    background: 'rgba(255, 255, 255, 0.2)',
-    border: 'none',
-    color: 'white',
+    background: '#F5F5F7',
+    border: '1px solid rgba(0,0,0,0.06)',
+    color: '#86868B',
     width: '28px',
     height: '28px',
-    borderRadius: '6px',
-    fontSize: '20px',
+    borderRadius: '8px',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'background 0.2s'
+    transition: 'background 0.2s',
   },
   detailsContent: {
-    padding: '20px'
+    padding: '16px 20px',
   },
   detailRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: '10px 0',
-    borderBottom: '1px solid #F1F5F9'
+    padding: '8px 0',
+    borderBottom: '1px solid rgba(0,0,0,0.04)',
   },
   detailLabel: {
     fontSize: '13px',
-    color: '#64748B',
-    fontWeight: '500'
+    color: '#86868B',
+    fontWeight: '500',
   },
   detailValue: {
-    fontSize: '14px',
-    color: '#1E293B',
-    fontWeight: '600'
+    fontSize: '13px',
+    color: '#1D1D1F',
+    fontWeight: '600',
   },
   badge: {
-    padding: '4px 12px',
+    padding: '3px 10px',
     borderRadius: '6px',
     color: 'white',
     fontSize: '11px',
+    fontWeight: '600',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px'
+    letterSpacing: '0.3px',
   },
   loadingContainer: {
     display: 'flex',
@@ -731,20 +654,20 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '80px 40px',
-    gap: '20px'
+    gap: '16px',
   },
   spinner: {
-    width: '50px',
-    height: '50px',
-    border: '4px solid #E2E8F0',
-    borderTop: '4px solid #667eea',
+    width: '40px',
+    height: '40px',
+    border: '3px solid rgba(0,0,0,0.06)',
+    borderTop: '3px solid #0071E3',
     borderRadius: '50%',
-    animation: 'spin 1s linear infinite'
+    animation: 'spin 1s linear infinite',
   },
   loadingText: {
-    fontSize: '16px',
-    color: '#64748B',
-    fontWeight: '500'
+    fontSize: '15px',
+    color: '#86868B',
+    fontWeight: '500',
   },
   errorContainer: {
     display: 'flex',
@@ -752,29 +675,39 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '80px 40px',
-    gap: '16px'
+    gap: '12px',
   },
   errorIcon: {
-    fontSize: '48px'
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    background: '#FF453A',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '20px',
+    fontWeight: '700',
+    margin: 0,
   },
   errorText: {
-    fontSize: '16px',
-    color: '#EF4444',
+    fontSize: '15px',
+    color: '#FF453A',
     fontWeight: '500',
-    textAlign: 'center'
+    textAlign: 'center',
+    margin: 0,
   },
   retryButton: {
-    padding: '12px 32px',
-    background: '#667eea',
+    padding: '10px 24px',
+    background: '#0071E3',
     color: 'white',
     border: 'none',
-    borderRadius: '8px',
-    fontSize: '14px',
-    fontWeight: '600',
+    borderRadius: '980px',
+    fontSize: '15px',
+    fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s',
-    boxShadow: '0 2px 4px rgba(102, 126, 234, 0.3)'
-  }
+  },
 };
 
 export default MapVisualization;

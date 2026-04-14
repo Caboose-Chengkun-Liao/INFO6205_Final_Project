@@ -1,104 +1,85 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  margin: 0;
-  background: #f5f7fa;
-  min-height: 100vh;
-}
-
 .app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: var(--apple-bg);
 }
 
+/* Glass-style header */
 .app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px 40px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--apple-glass);
+  backdrop-filter: var(--apple-blur);
+  -webkit-backdrop-filter: var(--apple-blur);
+  border-bottom: 1px solid var(--apple-border);
+  padding: 16px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--apple-text);
+  letter-spacing: -0.26px;
 }
 
 .connection-status {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.9rem;
+  font-size: 13px;
+  color: var(--apple-text-secondary);
+  font-weight: 500;
 }
 
 .status-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  animation: pulse 2s infinite;
 }
 
 .status-dot.connected {
-  background: #4ade80;
+  background: var(--apple-green);
+  box-shadow: 0 0 6px rgba(48, 209, 88, 0.5);
 }
 
 .status-dot.disconnected {
-  background: #ef4444;
+  background: var(--apple-red);
+  box-shadow: 0 0 6px rgba(255, 69, 58, 0.5);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
+/* Single-column centered layout */
 .app-main {
   flex: 1;
-  padding: 30px 40px;
-  max-width: 100%;  /* 使用整个页面宽度 */
+  padding: 32px 40px;
+  max-width: 1440px;
   width: 100%;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .section {
-  min-height: 200px;
+  width: 100%;
 }
 
-.section.full-width {
-  grid-column: 1 / -1;
-}
-
+/* Subtle footer */
 .app-footer {
-  background: #2d3748;
-  color: white;
-  padding: 20px;
+  border-top: 1px solid var(--apple-border);
+  background: var(--apple-bg);
+  color: var(--apple-text-secondary);
+  padding: 24px 40px;
   text-align: center;
 }
 
 .app-footer p {
-  margin: 5px 0;
-  font-size: 0.9rem;
+  margin: 4px 0;
+  font-size: 13px;
+  font-weight: 400;
 }

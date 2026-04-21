@@ -8,7 +8,6 @@ import StatisticsDashboard from './components/StatisticsDashboard';
 import SignalControlPanel from './components/SignalControlPanel';
 import SignalGridPanel from './components/SignalGridPanel';
 import AlgorithmComparison from './components/AlgorithmComparison';
-import DemoController from './components/DemoController';
 import ComparisonView from './components/ComparisonView';
 import ModeFlowDiagrams from './components/ModeFlowDiagrams';
 import websocketService from './services/websocket';
@@ -130,40 +129,45 @@ function App() {
         </div>
 
         <div className="section" style={{ display: 'flex', gap: 16 }}>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1.4 }}>
             <ErrorBoundary title="Signal control error">
               <SignalControlPanel onSignalsUpdate={handleSignalsUpdate} />
             </ErrorBoundary>
           </div>
           <div style={{ flex: 1 }}>
-            <ErrorBoundary title="Demo controller error">
-              <DemoController onStateChange={handleStateChange} />
-            </ErrorBoundary>
-          </div>
-          <div style={{ flex: 1 }}>
             <div style={{
-              background: 'rgba(255,255,255,0.92)',
-              backdropFilter: 'saturate(180%) blur(16px)',
-              borderRadius: 12,
-              padding: '12px 16px',
-              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+              background: '#FFFFFF',
+              borderRadius: 24,
+              padding: '28px 32px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
             }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#1D1D1F', marginBottom: 8 }}>
-                Mode Comparison
+              <div>
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 600, color: '#1D1D1F', letterSpacing: '-0.26px' }}>
+                  Algorithm Benchmark
+                </h2>
+                <p style={{ margin: '4px 0 16px 0', fontSize: 13, color: '#86868B' }}>
+                  Run Fixed / Adaptive / Green Wave in parallel on identical traffic
+                </p>
               </div>
               <button
                 onClick={() => setShowComparison(true)}
                 style={{
-                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                  background: 'linear-gradient(135deg, #0071E3, #0055b3)',
                   color: '#fff',
                   border: 'none',
-                  borderRadius: 8,
-                  padding: '8px 20px',
-                  fontSize: 13,
+                  borderRadius: 12,
+                  padding: '14px 20px',
+                  fontSize: 15,
                   fontWeight: 600,
                   cursor: 'pointer',
                   width: '100%',
-                  marginBottom: 6,
+                  marginBottom: 8,
+                  boxShadow: '0 4px 14px rgba(0,113,227,0.25)',
                 }}
               >
                 Compare 3 Modes Side by Side
@@ -171,11 +175,11 @@ function App() {
               <button
                 onClick={() => setShowFlowDiagrams(true)}
                 style={{
-                  background: 'linear-gradient(135deg, #f093fb, #f5576c)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 8,
-                  padding: '8px 20px',
+                  background: '#F5F5F7',
+                  color: '#1D1D1F',
+                  border: '1px solid rgba(0,0,0,0.06)',
+                  borderRadius: 12,
+                  padding: '12px 20px',
                   fontSize: 13,
                   fontWeight: 600,
                   cursor: 'pointer',

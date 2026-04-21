@@ -59,6 +59,17 @@ public class SignalController {
 
     public void setGraph(Graph graph) {
         this.graph = graph;
+        // 给每个信号一个随机初始相位,避免所有路口在 sim_time=0 时完全同步
+        // (若不加,FIXED 模式下整个城市信号同起同落,视觉上像被中央控制)
+        // 这不会改变 FIXED 的算法行为(每个路口仍按固定周期独立循环),只是错开起始点。
+        // Green Wave 模式会在 initializeGreenWave 中被 synchronize() 覆盖,不受影响。
+        Random r = new Random(42); // 固定种子 → 结果可重现
+        for (Node node : graph.getIntersectionNodes()) {
+            TrafficLight light = node.getTrafficLight();
+            if (light != null) {
+                light.synchronize(r.nextInt(light.getCycleLength()));
+            }
+        }
     }
 
     public void setFlowManager(FlowManager flowManager) {

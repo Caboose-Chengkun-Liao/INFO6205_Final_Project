@@ -114,7 +114,10 @@ public class TrafficLight {
 
     /**
      * 切换信号状态
-     * 状态机: GREEN -> YELLOW -> ALL_RED -> RED -> GREEN
+     * 状态机: GREEN -> YELLOW -> ALL_RED -> (switch dir) GREEN -> YELLOW -> ALL_RED -> ...
+     *
+     * 一个完整周期 = EW(绿+黄+全红) + NS(绿+黄+全红)
+     * 没有多余的 RED 过渡态:ALL_RED 结束后直接切换方向进入对向 GREEN。
      */
     private void switchState() {
         switch (currentState) {
@@ -127,18 +130,19 @@ public class TrafficLight {
                     currentState = SignalState.ALL_RED;
                     remainingTime = allRedDuration;
                 } else {
-                    // 无全红间隔，直接切换
-                    currentState = SignalState.RED;
-                    remainingTime = greenForDirection(oppositeDirection(currentDirection));
+                    // 无全红间隔,直接切到对向 GREEN
                     switchDirection();
+                    currentState = SignalState.GREEN;
+                    remainingTime = greenForDirection(currentDirection);
                 }
                 break;
             case ALL_RED:
-                currentState = SignalState.RED;
-                remainingTime = greenForDirection(oppositeDirection(currentDirection));
                 switchDirection();
+                currentState = SignalState.GREEN;
+                remainingTime = greenForDirection(currentDirection);
                 break;
             case RED:
+                // 只有从 synchronize() 人工置位才可能进入该状态;容错处理切到 GREEN
                 currentState = SignalState.GREEN;
                 remainingTime = greenForDirection(currentDirection);
                 break;

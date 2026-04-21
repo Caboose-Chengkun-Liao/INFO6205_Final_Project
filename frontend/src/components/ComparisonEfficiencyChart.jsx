@@ -4,7 +4,7 @@ import api from '../services/api';
 
 /**
  * Three-line efficiency comparison chart.
- * Plots FIXED_TIME / TRAFFIC_ADAPTIVE / LEARNING_BASED efficiency over sim time.
+ * Plots FIXED_TIME / TRAFFIC_ADAPTIVE / GREEN_WAVE efficiency over sim time.
  */
 const ComparisonEfficiencyChart = ({ running }) => {
   const [rawData, setRawData] = useState([]);
@@ -119,8 +119,8 @@ const ComparisonEfficiencyChart = ({ running }) => {
           />
           <Line
             type="monotone"
-            dataKey="LEARNING_BASED"
-            name="AI-Optimized (Q-Learning)"
+            dataKey="GREEN_WAVE"
+            name="Green Wave (Coordinated)"
             stroke="#30D158"
             strokeWidth={2.5}
             dot={{ r: 3, fill: '#30D158' }}

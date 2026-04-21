@@ -3,12 +3,13 @@ import { simulationAPI } from '../services/api';
 import api from '../services/api';
 import Mini3DScene from './three/Mini3DScene';
 import ComparisonEfficiencyChart from './ComparisonEfficiencyChart';
+import ComparisonOperationalCharts from './ComparisonOperationalCharts';
 import ModeRadarChart from './ModeRadarChart';
 
 const MODES = [
   { label: 'FIXED TIMING', color: '#FF453A', key: 'FIXED_TIME' },
   { label: 'ADAPTIVE', color: '#FF9F0A', key: 'TRAFFIC_ADAPTIVE' },
-  { label: 'AI-OPTIMIZED', color: '#30D158', key: 'LEARNING_BASED' },
+  { label: 'GREEN WAVE', color: '#30D158', key: 'GREEN_WAVE' },
 ];
 
 /**
@@ -18,6 +19,7 @@ const MODES = [
 const ComparisonView = ({ onBack }) => {
   const [running, setRunning] = useState(false);
   const [metrics, setMetrics] = useState([]);
+  const [metricsHistory, setMetricsHistory] = useState([]);
   const [status, setStatus] = useState('Ready to compare');
 
   const startComparison = useCallback(async () => {
@@ -44,16 +46,27 @@ const ComparisonView = ({ onBack }) => {
     } catch (e) { /* ignore */ }
     setRunning(false);
     setMetrics([]);
+    setMetricsHistory([]);
     setStatus('Stopped');
   }, []);
 
-  // Poll metrics
+  // Poll metrics + accumulate history for operational charts
   useEffect(() => {
     if (!running) return;
     const interval = setInterval(async () => {
       try {
         const res = await api.get('/compare/metrics');
-        if (Array.isArray(res.data)) setMetrics(res.data);
+        if (Array.isArray(res.data) && res.data.length === 3) {
+          setMetrics(res.data);
+          const snapshot = { timestamp: res.data[0]?.currentTime ?? 0 };
+          for (const m of res.data) {
+            if (m.modeKey) snapshot[m.modeKey] = m;
+          }
+          setMetricsHistory(prev => {
+            const next = [...prev, snapshot];
+            return next.length > 300 ? next.slice(-300) : next; // cap history
+          });
+        }
       } catch (e) { /* ignore */ }
     }, 2000);
     return () => clearInterval(interval);
@@ -161,6 +174,9 @@ const ComparisonView = ({ onBack }) => {
 
       {/* Efficiency trend comparison chart */}
       {running && <ComparisonEfficiencyChart running={running} />}
+
+      {/* Operational KPIs: completed flows + stopped % over time */}
+      {running && <ComparisonOperationalCharts history={metricsHistory} />}
 
       {/* Multi-dimensional radar chart */}
       {running && metrics.length === 3 && <ModeRadarChart metrics={metrics} />}

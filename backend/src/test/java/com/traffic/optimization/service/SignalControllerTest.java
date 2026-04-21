@@ -79,21 +79,20 @@ class SignalControllerTest {
     }
 
     @Test
-    void testQLearningMode_adjustsGreenTime() {
-        controller.setOptimizationMode(SignalController.OptimizationMode.LEARNING_BASED);
+    void testGreenWaveMode_alignsCycle() {
+        controller.setOptimizationMode(SignalController.OptimizationMode.GREEN_WAVE);
+        controller.optimizeSignals();
 
-        flowManager.createFlow("A", "B", 20);
-
-        // 多次优化以触发学习
-        for (int i = 0; i < 10; i++) {
-            controller.optimizeSignals();
+        // 绿波协调后所有路口应该共享相同的 cycle 长度
+        int firstCycle = -1;
+        for (Node node : graph.getIntersectionNodes()) {
+            TrafficLight light = node.getTrafficLight();
+            if (light == null) continue;
+            if (firstCycle == -1) firstCycle = light.getCycleLength();
+            else assertEquals(firstCycle, light.getCycleLength(),
+                "绿波模式下所有路口 cycle 应一致");
         }
-
-        // Q-Learning 应该选择一个合理的绿灯时长
-        Node intersection = graph.getNode("1");
-        int greenDuration = intersection.getTrafficLight().getGreenDuration();
-        assertTrue(greenDuration >= 10 && greenDuration <= 90,
-            "Q-Learning优化后绿灯时长应在合理范围内: " + greenDuration);
+        assertTrue(firstCycle > 0, "Cycle 长度应为正数");
     }
 
     @Test
@@ -139,65 +138,42 @@ class SignalControllerTest {
         assertTrue(controller.getOptimizationHistory().size() <= 100);
     }
 
-    // ==================== Multi-objective reward + TD bookkeeping tests ====================
+    // ==================== Green Wave tests ====================
 
     @Test
-    void testQLearning_secondTickCreatesQEntry() {
-        controller.setOptimizationMode(SignalController.OptimizationMode.LEARNING_BASED);
+    void testGreenWave_initializesOnlyOnce() {
+        controller.setOptimizationMode(SignalController.OptimizationMode.GREEN_WAVE);
 
-        // 两轮 optimize — 第一轮只登记 prev-state，第二轮开始真正 TD 更新
+        // 首次 optimize 会设置 35/15 并对齐相位
         controller.optimizeSignals();
-        int qTableSizeBeforeLearning = controller.getQTable().size();
+        TrafficLight light = graph.getNode("1").getTrafficLight();
+        int remainingAfterInit = light.getRemainingTime();
+        int greenEW = light.getGreenDurationEW();
+        int greenNS = light.getGreenDurationNS();
 
+        // 二次 optimize 不应改动相位/绿灯(初始化标记生效,避免打断绿波)
+        controller.updateSignals(); // 模拟 1 秒流逝
         controller.optimizeSignals();
-        int qTableSizeAfterLearning = controller.getQTable().size();
-
-        // TD 更新应该至少保持 Q-Table 大小（可能新增新 state-action pair）
-        assertTrue(qTableSizeAfterLearning >= qTableSizeBeforeLearning,
-            "Q-Table 大小应在第二轮学习后保持或增加");
+        assertEquals(greenEW, light.getGreenDurationEW(), "EW green 不应被二次 optimize 修改");
+        assertEquals(greenNS, light.getGreenDurationNS(), "NS green 不应被二次 optimize 修改");
+        // remainingTime 仅受 updateSignals 影响(每调 updateSignals 减 1),optimizeSignals 不应跳相位
+        assertEquals(remainingAfterInit - 1, light.getRemainingTime(),
+            "optimizeSignals 不应打断正在倒计时的相位");
     }
 
     @Test
-    void testQLearning_jitterPenalty_stableOverManyTicks() {
-        controller.setOptimizationMode(SignalController.OptimizationMode.LEARNING_BASED);
+    void testGreenWave_matchesFixedCycle() {
+        controller.setOptimizationMode(SignalController.OptimizationMode.GREEN_WAVE);
+        controller.optimizeSignals();
 
-        // 跑多轮，记录绿灯时长抖动历史
-        int[] greenHistory = new int[30];
-        for (int i = 0; i < 30; i++) {
-            controller.optimizeSignals();
-            greenHistory[i] = graph.getNode("1").getTrafficLight().getGreenDuration();
+        // 绿波使用与 FIXED 相同的 20/20 配时(cycle=50),唯一区别是相位 offset
+        for (Node node : graph.getIntersectionNodes()) {
+            TrafficLight light = node.getTrafficLight();
+            if (light == null) continue;
+            assertEquals(20, light.getGreenDurationEW(), "EW 绿应为 20s");
+            assertEquals(20, light.getGreenDurationNS(), "NS 绿应为 20s");
+            assertEquals(50, light.getCycleLength(), "cycle 应为 50s 以便与 FIXED 对照");
         }
-
-        // 所有 green duration 应在 ACTIONS 数组允许的合法范围内
-        for (int g : greenHistory) {
-            assertTrue(g >= 10 && g <= 90, "Green duration 越界: " + g);
-        }
-    }
-
-    @Test
-    void testQLearning_rewardSignalExists() {
-        // 确保跑多轮后 Q-Table 有非零值（证明 reward 在流动）
-        controller.setOptimizationMode(SignalController.OptimizationMode.LEARNING_BASED);
-
-        // 设置 non-trivial 流，触发真实 reward
-        flowManager.createFlow("A", "B", 25);
-
-        for (int i = 0; i < 20; i++) {
-            controller.optimizeSignals();
-        }
-
-        // Q-Table 中至少应有一个非零值（reward 真的流进来了）
-        boolean hasNonZero = false;
-        for (var qValues : controller.getQTable().values()) {
-            for (double q : qValues) {
-                if (Math.abs(q) > 1e-6) {
-                    hasNonZero = true;
-                    break;
-                }
-            }
-            if (hasNonZero) break;
-        }
-        assertTrue(hasNonZero, "Q-Table 应在学习后出现非零 Q 值");
     }
 
     @Test

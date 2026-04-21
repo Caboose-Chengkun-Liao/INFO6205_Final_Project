@@ -26,8 +26,19 @@ public class TrafficLight {
 
     /**
      * 绿灯时长（秒）- 可通过优化算法动态调整
+     * 注:两个方向共享该值时视为对称配时;Webster 会通过 greenDurationEW/NS 实现非对称分配
      */
     private int greenDuration;
+
+    /**
+     * 东西方向绿灯时长(秒)- 为非对称配时而设
+     */
+    private int greenDurationEW;
+
+    /**
+     * 南北方向绿灯时长(秒)- 为非对称配时而设
+     */
+    private int greenDurationNS;
 
     /**
      * 黄灯时长（秒）
@@ -79,6 +90,8 @@ public class TrafficLight {
         this.currentDirection = SignalDirection.EAST_WEST;
         this.currentState = SignalState.GREEN;
         this.greenDuration = greenDuration;
+        this.greenDurationEW = greenDuration;
+        this.greenDurationNS = greenDuration;
         this.yellowDuration = yellowDuration;
         this.allRedDuration = allRedDuration;
         // 红灯时长 = 对向绿灯 + 黄灯 + 全红
@@ -116,20 +129,30 @@ public class TrafficLight {
                 } else {
                     // 无全红间隔，直接切换
                     currentState = SignalState.RED;
-                    remainingTime = redDuration;
+                    remainingTime = greenForDirection(oppositeDirection(currentDirection));
                     switchDirection();
                 }
                 break;
             case ALL_RED:
                 currentState = SignalState.RED;
-                remainingTime = redDuration;
+                remainingTime = greenForDirection(oppositeDirection(currentDirection));
                 switchDirection();
                 break;
             case RED:
                 currentState = SignalState.GREEN;
-                remainingTime = greenDuration;
+                remainingTime = greenForDirection(currentDirection);
                 break;
         }
+    }
+
+    private int greenForDirection(SignalDirection dir) {
+        return dir == SignalDirection.EAST_WEST ? greenDurationEW : greenDurationNS;
+    }
+
+    private SignalDirection oppositeDirection(SignalDirection dir) {
+        return dir == SignalDirection.EAST_WEST
+            ? SignalDirection.NORTH_SOUTH
+            : SignalDirection.EAST_WEST;
     }
 
     /**
@@ -153,19 +176,78 @@ public class TrafficLight {
     }
 
     /**
-     * 调整绿灯时长（用于优化算法）
+     * 调整绿灯时长(对称:两个方向使用同一值,用于 FIXED/Q-Learning 等不区分方向的场景)
      */
     public void adjustGreenDuration(int newDuration) {
-        this.greenDuration = Math.max(10, Math.min(90, newDuration)); // 限制在10-90秒
+        int clamped = Math.max(10, Math.min(90, newDuration));
+        this.greenDuration = clamped;
+        this.greenDurationEW = clamped;
+        this.greenDurationNS = clamped;
         this.redDuration = greenDuration + yellowDuration + allRedDuration;
     }
 
     /**
-     * 获取完整周期时长（秒）
-     * 一个完整周期 = (绿灯 + 黄灯 + 全红) × 2 个方向
+     * 非对称调整两个方向的绿灯时长(用于 Webster 按方向需求分配)
+     */
+    public void adjustGreenDurations(int ewDuration, int nsDuration) {
+        this.greenDurationEW = Math.max(10, Math.min(90, ewDuration));
+        this.greenDurationNS = Math.max(10, Math.min(90, nsDuration));
+        this.greenDuration = (greenDurationEW + greenDurationNS) / 2;
+        // redDuration 不再是恒定值(随方向切换而变);保留字段兼容旧代码但其值仅作参考
+        this.redDuration = greenDuration + yellowDuration + allRedDuration;
+    }
+
+    /**
+     * 获取完整周期时长(秒)
+     * 一个完整周期 = EW 绿 + 黄 + 全红 + NS 绿 + 黄 + 全红
      */
     public int getCycleLength() {
-        return (greenDuration + yellowDuration + allRedDuration) * 2;
+        return greenDurationEW + greenDurationNS + (yellowDuration + allRedDuration) * 2;
+    }
+
+    /**
+     * 按给定偏移量(秒)一次性对齐信号相位 —— 用于绿波协调。
+     *
+     * 相位时间轴(从"EW 绿开始"为 0):
+     *   [0, ewG)                      EW GREEN
+     *   [ewG, ewG+y)                  EW YELLOW
+     *   [ewG+y, ewG+y+r)              ALL_RED (切 EW→NS)
+     *   [ewG+y+r, ewG+y+r+nsG)        NS GREEN
+     *   [ewG+y+r+nsG, ewG+y+r+nsG+y)  NS YELLOW
+     *   [...+y, cycle)                ALL_RED (切 NS→EW)
+     */
+    public void synchronize(int offsetSec) {
+        int cycle = getCycleLength();
+        int t = ((offsetSec % cycle) + cycle) % cycle;
+        int ewG = greenDurationEW, nsG = greenDurationNS;
+        int y = yellowDuration, r = allRedDuration;
+
+        if (t < ewG) {
+            currentDirection = SignalDirection.EAST_WEST;
+            currentState = SignalState.GREEN;
+            remainingTime = ewG - t;
+        } else if (t < ewG + y) {
+            currentDirection = SignalDirection.EAST_WEST;
+            currentState = SignalState.YELLOW;
+            remainingTime = (ewG + y) - t;
+        } else if (t < ewG + y + r) {
+            currentDirection = SignalDirection.EAST_WEST;
+            currentState = SignalState.ALL_RED;
+            remainingTime = (ewG + y + r) - t;
+        } else if (t < ewG + y + r + nsG) {
+            currentDirection = SignalDirection.NORTH_SOUTH;
+            currentState = SignalState.GREEN;
+            remainingTime = (ewG + y + r + nsG) - t;
+        } else if (t < ewG + y + r + nsG + y) {
+            currentDirection = SignalDirection.NORTH_SOUTH;
+            currentState = SignalState.YELLOW;
+            remainingTime = (ewG + y + r + nsG + y) - t;
+        } else {
+            currentDirection = SignalDirection.NORTH_SOUTH;
+            currentState = SignalState.ALL_RED;
+            remainingTime = cycle - t;
+        }
+        this.offset = offsetSec;
     }
 
     /**

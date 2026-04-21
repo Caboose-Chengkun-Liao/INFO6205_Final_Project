@@ -548,7 +548,7 @@ const LearningCurve = ({ color = '#30D158' }) => {
 };
 
 /** Mode check branch display */
-const BranchView = ({ modes = ['FIXED_TIME', 'TRAFFIC_ADAPTIVE', 'LEARNING_BASED'], selectedIdx = 0, color = '#FF453A' }) => (
+const BranchView = ({ modes = ['FIXED_TIME', 'TRAFFIC_ADAPTIVE', 'GREEN_WAVE'], selectedIdx = 0, color = '#FF453A' }) => (
   <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eaeaea' }}>
     <div style={{ fontSize: 11, fontWeight: 700, color: '#86868B', marginBottom: 10, letterSpacing: 0.5 }}>switch(mode)</div>
     {modes.map((m, i) => {
@@ -797,149 +797,75 @@ const MODES = [
     ],
   },
   {
-    key: 'learning',
-    title: 'AI OPTIMIZED',
-    subtitle: 'Q-Learning Reinforcement Learning',
+    key: 'greenwave',
+    title: 'GREEN WAVE',
+    subtitle: 'Corridor-Coordinated Offsets',
     color: '#30D158',
     gradientStart: '#30D158',
     gradientEnd: '#1a8a33',
     softBg: 'rgba(48,209,88,0.06)',
-    description: 'Learns optimal signal timing through trial-and-reward. The agent improves with every episode.',
-    complexity: 'O(V) per step, converges over many episodes',
-    paper: 'Watkins & Dayan, "Q-Learning" (1989)',
-    formula: 'Q(s,a) ← Q(s,a) + α[r + γ·max Q(s′,a′) − Q(s,a)]',
+    description: 'Synchronize a chain of intersections so a vehicle traveling at the design speed never stops for a red.',
+    complexity: 'O(V) once at setup, then free',
+    paper: 'Little, "Synchronization of Traffic Signals" (1966)',
+    formula: 'offset_i = (cumulative_distance_i / design_speed) mod cycle',
     steps: [
       {
         icon: 'eye',
-        title: 'Observe State',
-        subtitle: 'Discretize traffic into buckets',
-        detail: 'Waiting vehicle count is mapped into 4 discrete state buckets. This keeps the Q-table compact enough to learn.',
-        code: 'if (w ≤ 5)  return "LOW";\nif (w ≤ 15) return "MEDIUM";\nif (w ≤ 30) return "HIGH";\nreturn "VERY_HIGH";',
-        highlight: '4 state buckets',
+        title: 'Identify Corridor',
+        subtitle: 'Group intersections by axis',
+        detail: 'Signals sharing the same Y-coordinate (EW axis) form a corridor. Only corridors with 3+ lights are worth coordinating.',
+        code: 'corridors = groupBy(nodes,\n    n => round(n.y / 0.5));\n// keep only size >= 3',
+        highlight: 'Y-axis clustering',
         visual: (color) => (
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <MiniIntersection greenDir="NS" vehicles={{ N: 2, S: 3, E: 2, W: 3 }} highlight color={color} scale={0.85} />
+              <MiniIntersection greenDir="EW" vehicles={{ N: 0, S: 0, E: 4, W: 4 }} highlight color={color} scale={0.85} />
             </div>
             <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-              <StateBuckets activeIdx={1} color={color} />
+              <StateBuckets activeIdx={0} color={color} />
             </div>
           </div>
         ),
       },
       {
         icon: 'target',
-        title: 'Calculate Reward',
-        subtitle: 'Did queue shrink?',
-        detail: 'Reward is proportional to how many vehicles were cleared since last iteration. Positive → good action.',
-        code: 'double reward = lastWaiting\n    - currentWaiting;\n// > 0: queue decreased\n// < 0: queue increased',
-        highlight: 'Feedback signal',
-        visual: (color) => (
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ background: '#fff', borderRadius: 10, padding: 12, border: '1px solid #eaeaea', marginBottom: 6 }}>
-                <div style={{ fontSize: 10, color: '#86868B', fontWeight: 700, letterSpacing: 0.5 }}>PREVIOUS WAITING</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: '#86868B', fontFamily: 'SF Mono, monospace' }}>12</div>
-              </div>
-              <div style={{ background: '#fff', borderRadius: 10, padding: 12, border: '1px solid #eaeaea' }}>
-                <div style={{ fontSize: 10, color: '#86868B', fontWeight: 700, letterSpacing: 0.5 }}>CURRENT WAITING</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: 'SF Mono, monospace' }}>9</div>
-              </div>
-            </div>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-              <RewardIndicator value={3} color={color} />
-            </div>
-          </div>
-        ),
-      },
-      {
-        icon: 'dice',
-        title: 'ε-Greedy Decision',
-        subtitle: 'Explore vs. Exploit',
-        detail: 'With small probability ε try a random action (explore). Otherwise pick the best-known action (exploit).',
-        code: 'if (random() < EPSILON) {\n    return randomAction();  // explore\n} else {\n    return argmax(Q[state]); // exploit\n}',
-        highlight: 'ε = 0.1',
-        visual: (color) => <EpsilonSplit epsilon={0.1} chose="exploit" color={color} />,
+        title: 'Pick Design Speed',
+        subtitle: 'Choose coordinated velocity',
+        detail: 'All cars traveling at this speed along the corridor should catch every green. Typical urban value: 40 km/h (sim applies 2× slowdown).',
+        code: 'designSpeed = 40 km/h\neffective = designSpeed / 2\n            = 20 km/h',
+        highlight: 'v = 20 km/h (sim)',
+        visual: (color) => <SignalTimingBar green={35} yellow={3} red={22} label="35s EW / 15s NS / 60s cycle" color={color} />,
       },
       {
         icon: 'bolt',
-        title: 'Pick Action',
-        subtitle: 'Choose green duration',
-        detail: 'The action space is 5 discrete green durations. The agent picks one based on the ε-greedy decision.',
-        code: 'int[] ACTIONS =\n    {15, 20, 30, 45, 60};\nint greenTime =\n    ACTIONS[chosenIdx];',
-        highlight: '5 possible actions',
+        title: 'Compute Offsets',
+        subtitle: 'How long to reach each light',
+        detail: 'For each intersection i in the corridor, offset_i = (cumulative distance from the first light) / design_speed. Gives seconds-until-green-starts.',
+        code: 'for (node : corridor) {\n  cumKm += delta(node.x);\n  travelSec =\n      cumKm * 3600 / vKmh;\n  offset_i = travelSec % cycle;\n}',
+        highlight: 'Cumulative travel time',
         visual: (color) => <ActionSpace chosenIdx={2} color={color} />,
       },
       {
         icon: 'signal',
-        title: 'Execute on World',
-        subtitle: 'Push to traffic light',
-        detail: 'The chosen green duration is applied to the intersection. We now wait and observe how traffic responds.',
-        code: 'light.adjustGreenDuration(\n    greenTime);',
-        highlight: 'Act in environment',
+        title: 'Synchronize Phases',
+        subtitle: 'Align cycle start per light',
+        detail: 'At sim time 0, light i should be at phase (cycle - offset_i) mod cycle. Then at time t=offset_i, it hits EW green start exactly as the car arrives.',
+        code: 'phaseAtT0 =\n    (cycle - offset_i) % cycle;\nlight.synchronize(\n    phaseAtT0);',
+        highlight: 'One-time setup',
         visual: (color) => (
           <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}><MiniIntersection greenDir="NS" vehicles={{ N: 2, S: 3, E: 2, W: 3 }} highlight color={color} scale={0.85} /></div>
-            <div style={{ flex: 1 }}><SignalTimingBar green={30} yellow={3} red={27} label="Chose 30s green" color={color} /></div>
-          </div>
-        ),
-      },
-      {
-        icon: 'brain',
-        title: 'Update Q-Table',
-        subtitle: 'Apply Bellman equation',
-        detail: 'The core of Q-Learning: blend observed reward with future value estimate to refine the policy.',
-        code: 'Q[s][a] = Q[s][a] + α * (\n    r + γ * max(Q[s\'])\n      - Q[s][a]\n);',
-        highlight: 'α=0.1, γ=0.9',
-        visual: (color) => (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <QTableView activeState="MEDIUM" activeAction={2} color={color} />
-            <BellmanFormula color={color} />
-          </div>
-        ),
-      },
-      {
-        icon: 'save',
-        title: 'Remember State',
-        subtitle: 'Store for next iteration',
-        detail: 'Save current waiting count so next round we can compute the reward from the delta.',
-        code: 'lastWaitingCounts.put(\n    nodeId, currentWaiting);',
-        highlight: 'Memory update',
-        visual: (color) => (
-          <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #eaeaea' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#86868B', marginBottom: 10, letterSpacing: 0.5 }}>lastWaitingCounts (HashMap)</div>
-            {[
-              { id: 'node-1', val: 9, updated: true },
-              { id: 'node-2', val: 5 },
-              { id: 'node-3', val: 14 },
-              { id: 'node-4', val: 3 },
-            ].map(e => (
-              <div key={e.id} style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '6px 10px',
-                marginBottom: 3,
-                background: e.updated ? color : '#fafafa',
-                color: e.updated ? '#fff' : '#555',
-                borderRadius: 6,
-                fontFamily: 'SF Mono, Menlo, monospace',
-                fontSize: 11,
-              }}>
-                <span>{e.id}</span>
-                <span style={{ fontWeight: 700 }}>→ {e.val}{e.updated ? ' ✓ just updated' : ''}</span>
-              </div>
-            ))}
+            <div style={{ flex: 1 }}><MiniIntersection greenDir="EW" vehicles={{ N: 0, S: 0, E: 4, W: 3 }} highlight color={color} scale={0.85} /></div>
+            <div style={{ flex: 1 }}><SignalTimingBar green={35} yellow={3} red={22} label="Phase-aligned" color={color} /></div>
           </div>
         ),
       },
       {
         icon: 'trending',
-        title: 'Converge',
-        subtitle: 'Policy improves over time',
-        detail: 'After many iterations, the Q-table converges to the optimal policy. The agent eventually outperforms Webster.',
-        code: '// As episodes → ∞:\n// Q(s,a) → Q*(s,a)\n// Agent discovers optimal policy\n// for each state bucket',
-        highlight: 'Learned intelligence',
+        title: 'Cars Ride the Wave',
+        subtitle: 'Continuous flow without stops',
+        detail: 'Vehicles at design speed arrive at each signal exactly as it turns green. No start-stop losses on the major corridor.',
+        code: '// car leaves light i at t=0\n// arrives light i+1 at t=offset_{i+1}\n// → EW green just starting\n// → passes without braking',
+        highlight: 'Zero stops along corridor',
         visual: (color) => <LearningCurve color={color} />,
       },
     ],

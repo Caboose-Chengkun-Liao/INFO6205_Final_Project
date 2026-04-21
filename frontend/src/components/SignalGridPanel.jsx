@@ -19,6 +19,37 @@ const SignalGridPanel = ({ signals = [] }) => {
     }
   };
 
+  /**
+   * Derive per-direction state from backend payload.
+   * Backend sends { direction, state, remainingTime } where `state` applies to the
+   * `direction` currently active — the other direction is implicitly RED.
+   */
+  const deriveDirectionStates = (signal) => {
+    const activeDir = signal.direction; // EAST_WEST | NORTH_SOUTH
+    const activeState = signal.state;   // GREEN | YELLOW | RED | ALL_RED
+    const remaining = signal.remainingTime ?? null;
+
+    const inactiveState = activeState === 'ALL_RED' ? 'RED' : 'RED';
+
+    if (activeDir === 'EAST_WEST') {
+      return {
+        ewState: activeState === 'ALL_RED' ? 'RED' : activeState,
+        nsState: inactiveState,
+        ewTimer: remaining,
+        nsTimer: null,
+      };
+    }
+    if (activeDir === 'NORTH_SOUTH') {
+      return {
+        nsState: activeState === 'ALL_RED' ? 'RED' : activeState,
+        ewState: inactiveState,
+        nsTimer: remaining,
+        ewTimer: null,
+      };
+    }
+    return { ewState: 'RED', nsState: 'RED', ewTimer: null, nsTimer: null };
+  };
+
   if (!signals || signals.length === 0) {
     return (
       <div style={s.container}>
@@ -38,7 +69,9 @@ const SignalGridPanel = ({ signals = [] }) => {
       </div>
 
       <div style={s.grid}>
-        {signals.map((signal, index) => (
+        {signals.map((signal, index) => {
+          const { ewState, nsState, ewTimer, nsTimer } = deriveDirectionStates(signal);
+          return (
           <div key={signal.nodeId || index} style={s.card}>
             <div style={s.cardHeader}>
               <span style={s.nodeId}>Node {signal.nodeId}</span>
@@ -54,22 +87,22 @@ const SignalGridPanel = ({ signals = [] }) => {
                 <div style={s.lights}>
                   <div style={{
                     ...s.light,
-                    background: signal.nsState === 'RED' ? '#FF453A' : '#E5E5EA',
-                    boxShadow: signal.nsState === 'RED' ? getGlow('RED') : 'none',
+                    background: nsState === 'RED' ? '#FF453A' : '#E5E5EA',
+                    boxShadow: nsState === 'RED' ? getGlow('RED') : 'none',
                   }}/>
                   <div style={{
                     ...s.light,
-                    background: signal.nsState === 'YELLOW' ? '#FFD60A' : '#E5E5EA',
-                    boxShadow: signal.nsState === 'YELLOW' ? getGlow('YELLOW') : 'none',
+                    background: nsState === 'YELLOW' ? '#FFD60A' : '#E5E5EA',
+                    boxShadow: nsState === 'YELLOW' ? getGlow('YELLOW') : 'none',
                   }}/>
                   <div style={{
                     ...s.light,
-                    background: signal.nsState === 'GREEN' ? '#30D158' : '#E5E5EA',
-                    boxShadow: signal.nsState === 'GREEN' ? getGlow('GREEN') : 'none',
+                    background: nsState === 'GREEN' ? '#30D158' : '#E5E5EA',
+                    boxShadow: nsState === 'GREEN' ? getGlow('GREEN') : 'none',
                   }}/>
                 </div>
-                <span style={{...s.timer, color: getColor(signal.nsState)}}>
-                  {signal.nsTimer != null ? `${signal.nsTimer}s` : '--'}
+                <span style={{...s.timer, color: getColor(nsState)}}>
+                  {nsTimer != null ? `${nsTimer}s` : '--'}
                 </span>
               </div>
 
@@ -82,27 +115,28 @@ const SignalGridPanel = ({ signals = [] }) => {
                 <div style={s.lights}>
                   <div style={{
                     ...s.light,
-                    background: signal.ewState === 'RED' ? '#FF453A' : '#E5E5EA',
-                    boxShadow: signal.ewState === 'RED' ? getGlow('RED') : 'none',
+                    background: ewState === 'RED' ? '#FF453A' : '#E5E5EA',
+                    boxShadow: ewState === 'RED' ? getGlow('RED') : 'none',
                   }}/>
                   <div style={{
                     ...s.light,
-                    background: signal.ewState === 'YELLOW' ? '#FFD60A' : '#E5E5EA',
-                    boxShadow: signal.ewState === 'YELLOW' ? getGlow('YELLOW') : 'none',
+                    background: ewState === 'YELLOW' ? '#FFD60A' : '#E5E5EA',
+                    boxShadow: ewState === 'YELLOW' ? getGlow('YELLOW') : 'none',
                   }}/>
                   <div style={{
                     ...s.light,
-                    background: signal.ewState === 'GREEN' ? '#30D158' : '#E5E5EA',
-                    boxShadow: signal.ewState === 'GREEN' ? getGlow('GREEN') : 'none',
+                    background: ewState === 'GREEN' ? '#30D158' : '#E5E5EA',
+                    boxShadow: ewState === 'GREEN' ? getGlow('GREEN') : 'none',
                   }}/>
                 </div>
-                <span style={{...s.timer, color: getColor(signal.ewState)}}>
-                  {signal.ewTimer != null ? `${signal.ewTimer}s` : '--'}
+                <span style={{...s.timer, color: getColor(ewState)}}>
+                  {ewTimer != null ? `${ewTimer}s` : '--'}
                 </span>
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

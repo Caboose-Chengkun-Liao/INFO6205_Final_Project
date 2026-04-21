@@ -76,6 +76,12 @@ public class TrafficFlow {
     private double totalDistance;
 
     /**
+     * 当前被阻塞的累计等待时长(秒)。BLOCKED 时累加,离开阻塞状态时重置。
+     * 用于信号优化的反饿死机制:等待越久,该 flow 对所在方向的需求权重越大。
+     */
+    private double currentWaitTime;
+
+    /**
      * 创建时间（模拟时间）
      */
     private long createdAt;
@@ -207,6 +213,11 @@ public class TrafficFlow {
         if (state == FlowState.ACTIVE || state == FlowState.BLOCKED) {
             travelTimeCounter += deltaTime;
             timeOnCurrentEdge += deltaTime;
+        }
+        if (state == FlowState.BLOCKED) {
+            currentWaitTime += deltaTime;
+        } else {
+            currentWaitTime = 0;
         }
     }
 

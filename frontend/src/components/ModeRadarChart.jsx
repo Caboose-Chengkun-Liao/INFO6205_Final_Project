@@ -12,7 +12,7 @@ import {
 const MODE_DEFS = [
   { key: 'Fixed Timing',   color: '#FF453A' },
   { key: 'Adaptive',       color: '#FF9F0A' },
-  { key: 'AI-Optimized',   color: '#30D158' },
+  { key: 'Green Wave',     color: '#30D158' },
 ];
 
 const AXES = [

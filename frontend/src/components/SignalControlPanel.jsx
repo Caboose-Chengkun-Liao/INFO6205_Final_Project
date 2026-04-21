@@ -6,13 +6,13 @@ import websocketService from '../services/websocket';
  * Signal Control Panel - Apple-style inline segmented control for mode switching
  */
 const SignalControlPanel = ({ onSignalsUpdate }) => {
-  const [currentMode, setCurrentMode] = useState('FIXED');
+  const [currentMode, setCurrentMode] = useState('FIXED_TIME');
   const [isChanging, setIsChanging] = useState(false);
 
   const modes = [
-    { id: 'FIXED', name: 'Fixed Timing', desc: 'Traditional fixed cycle' },
-    { id: 'ADAPTIVE', name: 'Adaptive', desc: 'Real-time traffic responsive' },
-    { id: 'INTELLIGENT', name: 'AI-Optimized', desc: 'Machine learning control' },
+    { id: 'FIXED_TIME', name: 'Fixed Timing', desc: 'Traditional fixed cycle' },
+    { id: 'TRAFFIC_ADAPTIVE', name: 'Adaptive', desc: 'Webster + wait-weighted demand' },
+    { id: 'GREEN_WAVE', name: 'Green Wave', desc: 'Corridor-coordinated offsets' },
   ];
 
   useEffect(() => {
@@ -27,7 +27,7 @@ const SignalControlPanel = ({ onSignalsUpdate }) => {
       }
     });
 
-    const interval = setInterval(loadSignals, 3000);
+    const interval = setInterval(loadSignals, 1000);
 
     return () => {
       if (unsubscribe) unsubscribe();

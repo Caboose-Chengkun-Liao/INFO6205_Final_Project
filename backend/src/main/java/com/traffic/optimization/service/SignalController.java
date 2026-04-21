@@ -17,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * 信号灯控制器 - 负责管理所有路口的信号灯
  * 支持三种优化模式：
  * 1. FIXED_TIME: 固定时长（无优化）
- * 2. TRAFFIC_ADAPTIVE: Webster 公式 + 实时交通量自适应
- * 3. LEARNING_BASED: Q-Learning 强化学习优化
+ * 2. TRAFFIC_ADAPTIVE: Webster + 等待时间加权的非对称自适应
+ * 3. GREEN_WAVE: 按设计车速对主走廊各路口设相位偏移的绿波协调
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -33,37 +33,24 @@ public class SignalController {
     private OptimizationMode mode;
     private List<OptimizationRecord> optimizationHistory;
 
-    // ========== Q-Learning 参数 ==========
+    // ========== 绿波协调参数 ==========
     /**
-     * Q-Table: (节点ID + 状态) -> 各动作的 Q 值
-     * 状态 = 等待车辆数的区间 (0-5, 5-15, 15-30, 30+)
-     * 动作 = 绿灯时长 (15, 20, 25, 30, 40, 50, 60秒)
+     * 绿波使用与 FIXED 相同的对称配时(20/20,cycle=50s),只靠 offset 协调取得优势。
+     * 这样 off-corridor 的 flow 与 FIXED 等待上限一致,沿走廊 flow 白赚 0 stop 的收益。
      */
-    private final Map<String, double[]> qTable = new ConcurrentHashMap<>();
-    private static final int[] ACTIONS = {15, 20, 25, 30, 40, 50, 60}; // 可选的绿灯时长
-    private static final double LEARNING_RATE = 0.1;   // α
-    private static final double DISCOUNT_FACTOR = 0.9; // γ
-    private static final double EPSILON = 0.15;        // ε-greedy 探索率
-    private final Random random = new Random();
+    private static final int GW_EW_GREEN = 20;
+    private static final int GW_NS_GREEN = 20;
+    /** 绿波设计车速(km/h) — 用于计算各路口间的 offset */
+    private static final double GW_DESIGN_SPEED_KMH = 40.0;
+    /** 仿真速度倍率(与 Edge.getIdealTravelTime 的 *2 系数一致) */
+    private static final double GW_SLOWDOWN = 2.0;
+    /** 走廊识别:Y 坐标聚类分辨率(同一条 EW 走廊的节点 y 约等) */
+    private static final double GW_Y_BIN = 0.5;
+    /** 走廊识别:最小节点数,少于此值的不算走廊(也就不协调) */
+    private static final int GW_MIN_CORRIDOR_SIZE = 3;
 
-    // ========== 多目标奖励权重 ==========
-    private static final double W_QUEUE      = 0.5;   // 排队改善
-    private static final double W_THROUGHPUT = 0.2;   // 吞吐量增量
-    private static final double W_SPEED      = 0.2;   // 速度流畅度
-    private static final double W_STABILITY  = 0.1;   // 绿灯抖动惩罚
-
-    // 上次每个路口的等待车辆数（用于计算 reward）
-    private final Map<String, Integer> lastWaitingCounts = new ConcurrentHashMap<>();
-
-    // ========== TD 正确性追踪（修复 Q(s_t, a_t) 的更新目标）==========
-    /** 每节点上一轮的 state key（用于 bootstrap 到正确的 Q-cell） */
-    private final Map<String, String>  prevStateKey       = new ConcurrentHashMap<>();
-    /** 每节点上一轮的 action index */
-    private final Map<String, Integer> prevActionIdx      = new ConcurrentHashMap<>();
-    /** 每节点上一轮的吞吐量（用于 R_throughput） */
-    private final Map<String, Integer> lastThroughputNode = new ConcurrentHashMap<>();
-    /** 每节点上一轮的绿灯时长（用于 R_stability） */
-    private final Map<String, Integer> lastGreenAtNode    = new ConcurrentHashMap<>();
+    /** 绿波初始化标记 — 只在首次进入 GREEN_WAVE 模式时同步相位 */
+    private boolean greenWaveInitialized = false;
 
     public SignalController() {
         this.mode = OptimizationMode.FIXED_TIME;
@@ -79,6 +66,10 @@ public class SignalController {
     }
 
     public void setOptimizationMode(OptimizationMode mode) {
+        if (this.mode != mode) {
+            // 切换离开 GREEN_WAVE 时清标记,下次进入重新同步
+            if (this.mode == OptimizationMode.GREEN_WAVE) greenWaveInitialized = false;
+        }
         this.mode = mode;
         log.info("信号优化模式切换为: {}", mode);
     }
@@ -107,13 +98,17 @@ public class SignalController {
 
         switch (mode) {
             case FIXED_TIME:
-                // 固定时长模式，不做优化
+                // 固定时长模式,不做优化
                 break;
             case TRAFFIC_ADAPTIVE:
                 optimizeByWebster();
                 break;
-            case LEARNING_BASED:
-                optimizeByQLearning();
+            case GREEN_WAVE:
+                if (!greenWaveInitialized) {
+                    initializeGreenWave();
+                    greenWaveInitialized = true;
+                }
+                // 后续调用不再重新同步(重新同步会打断绿波相位)
                 break;
         }
     }
@@ -130,254 +125,278 @@ public class SignalController {
      *
      * 参考: F.V. Webster, "Traffic Signal Settings", 1958
      */
+    private static final double WAIT_PENALTY_TAU = 30.0;     // 等待时间归一化尺度(秒)
+    private static final double SATURATION_FLOW = 0.5;       // 饱和流率(辆/秒 ≈ 1800/h)
+    private static final double DEMAND_WINDOW   = 30.0;      // 需求观测窗口(秒)
+
+    private static final int    MIN_CYCLE      = 40;   // 最小周期(秒)
+    private static final int    MAX_CYCLE      = 80;   // 最大周期(秒) - 更短利于网络协调
+    private static final int    MIN_DIR_GREEN  = 15;   // 每个方向的绿灯下限 - 防饿死硬约束
+
     private void optimizeByWebster() {
         for (Node node : graph.getIntersectionNodes()) {
             TrafficLight light = node.getTrafficLight();
             if (light == null) continue;
 
-            // 计算各方向的等待/通行车辆
-            int waitingVehicles = flowManager.getWaitingFlowsAtNode(node);
-            int totalActiveFlows = countActiveFlowsAtNode(node);
-
-            // 估算交通流量比 y（简化：用等待车辆数/饱和流量估算）
-            // 饱和流量假设: 每相位每秒通过 0.5 辆车（1800辆/小时）
-            double saturationFlow = 0.5; // 辆/秒
-            double demandRate = (waitingVehicles + totalActiveFlows) / 60.0; // 估算每秒到达率
-
-            // 两个相位的流量比
-            double y1 = Math.min(demandRate / saturationFlow, 0.9); // 限制最大 0.9
-            double y2 = Math.min(demandRate / saturationFlow * 0.7, 0.9); // 假设交叉方向 70%
-
-            double totalY = y1 + y2;
-
-            // 防止除零和不合理值
-            if (totalY >= 1.0) {
-                totalY = 0.95; // 过饱和时使用最大周期
+            // 按方向统计进口道的需求(含等待时间加权)
+            DirectionalDemand dEW = new DirectionalDemand();
+            DirectionalDemand dNS = new DirectionalDemand();
+            for (Edge in : node.getIncomingEdges()) {
+                TrafficLight.SignalDirection dir = edgeDirection(in);
+                DirectionalDemand bucket = (dir == TrafficLight.SignalDirection.EAST_WEST) ? dEW : dNS;
+                accumulateEdgeDemand(in, bucket);
             }
 
-            // 总损失时间 L = 启动损失(2s/相位 × 2相位) + 全红间隔
+            // y_i 使用加权需求:等待越久,y 越大,周期也越长 → 算法自然给拥堵方更多时间
+            double yEW = Math.min(dEW.weighted / (DEMAND_WINDOW * SATURATION_FLOW), 0.9);
+            double yNS = Math.min(dNS.weighted / (DEMAND_WINDOW * SATURATION_FLOW), 0.9);
+            double totalY = yEW + yNS;
+            if (totalY >= 0.95) totalY = 0.95;
+
             double L = 4.0 + light.getAllRedDuration() * 2;
-
-            // Webster 最优周期: C₀ = (1.5L + 5) / (1 - ΣYᵢ)
-            double optimalCycle = (1.5 * L + 5) / (1 - totalY);
-
-            // 限制周期在合理范围 [40, 180] 秒
-            optimalCycle = Math.max(40, Math.min(180, optimalCycle));
-
-            // 计算有效绿灯时间
+            double optimalCycle = (totalY > 0) ? (1.5 * L + 5) / (1 - totalY) : MIN_CYCLE;
+            optimalCycle = Math.max(MIN_CYCLE, Math.min(MAX_CYCLE, optimalCycle));
             double effectiveGreen = optimalCycle - L;
 
-            // 按流量比分配绿灯时间给各相位
-            int greenTime;
-            if (totalY > 0) {
-                greenTime = (int) Math.round(effectiveGreen * y1 / totalY);
+            // 按加权需求比例分配,但每方向不低于 MIN_DIR_GREEN (硬约束防饿死)
+            double wEW = dEW.weighted, wNS = dNS.weighted;
+            double splitEW, splitNS;
+            if (wEW + wNS > 0) {
+                splitEW = wEW / (wEW + wNS);
+                splitNS = wNS / (wEW + wNS);
             } else {
-                greenTime = (int) Math.round(effectiveGreen / 2);
+                splitEW = 0.5;
+                splitNS = 0.5;
             }
 
-            // 应用优化后的绿灯时长
-            light.adjustGreenDuration(greenTime);
-            log.debug("Webster优化 节点{}: 周期={}s, 绿灯={}s, Y={:.2f}",
-                node.getId(), (int) optimalCycle, greenTime, totalY);
+            int greenEW = (int) Math.round(effectiveGreen * splitEW);
+            int greenNS = (int) Math.round(effectiveGreen * splitNS);
+            // 保证两方向都有合理的通行窗口
+            if (greenEW < MIN_DIR_GREEN) {
+                greenNS -= (MIN_DIR_GREEN - greenEW);
+                greenEW = MIN_DIR_GREEN;
+            }
+            if (greenNS < MIN_DIR_GREEN) {
+                greenEW -= (MIN_DIR_GREEN - greenNS);
+                greenNS = MIN_DIR_GREEN;
+            }
+            greenEW = Math.max(MIN_DIR_GREEN, greenEW);
+            greenNS = Math.max(MIN_DIR_GREEN, greenNS);
+            light.adjustGreenDurations(greenEW, greenNS);
+
+            if (log.isDebugEnabled()) {
+                log.debug(String.format("Webster 节点%s: C=%ds green EW=%ds/NS=%ds cars=%d/%d weighted=%.1f/%.1f",
+                    node.getId(), (int) optimalCycle, greenEW, greenNS,
+                    dEW.rawCars, dNS.rawCars, wEW, wNS));
+            }
         }
     }
 
-    /**
-     * 统计某节点附近的活跃交通流数
-     */
-    private int countActiveFlowsAtNode(Node node) {
-        int count = 0;
-        for (var flow : flowManager.getActiveFlowsList()) {
-            if (flow.getCurrentNode() != null && flow.getCurrentNode().equals(node)) {
-                count += flow.getNumberOfCars();
-            }
-        }
-        return count;
+    /** 判断一条边的走向(通过 from→to 位移主分量) */
+    private TrafficLight.SignalDirection edgeDirection(Edge edge) {
+        double dx = edge.getToNode().getX() - edge.getFromNode().getX();
+        double dy = edge.getToNode().getY() - edge.getFromNode().getY();
+        return Math.abs(dx) > Math.abs(dy)
+            ? TrafficLight.SignalDirection.EAST_WEST
+            : TrafficLight.SignalDirection.NORTH_SOUTH;
     }
 
-    // ==================== Q-Learning 优化 ====================
+    /** 累加一条进口道上的原始车数与等待加权车数 */
+    private void accumulateEdgeDemand(Edge edge, DirectionalDemand bucket) {
+        Queue<com.traffic.optimization.model.TrafficFlow> queue = edge.getVehicleQueue();
+        if (queue == null) return;
+        for (var flow : queue) {
+            int cars = flow.getNumberOfCars();
+            bucket.rawCars += cars;
+            // 惩罚系数 (1 + wait/τ)²:wait=0 → 1×;wait=τ → 4×;wait=2τ → 9×
+            double w = 1.0 + flow.getCurrentWaitTime() / WAIT_PENALTY_TAU;
+            bucket.weighted += cars * w * w;
+        }
+    }
+
+    private static class DirectionalDemand {
+        int rawCars = 0;
+        double weighted = 0.0;
+    }
+
+    // ==================== 绿波协调(Green Wave Coordination) ====================
 
     /**
-     * Q-Learning 强化学习优化信号时序
+     * 绿波协调(Green Wave Coordination)
      *
-     * 状态 (State): 路口等待车辆数的离散区间
-     * 动作 (Action): 选择绿灯时长
-     * 奖励 (Reward): 多目标加权（排队改善 + 吞吐量增量 + 速度流畅度 + 抖动惩罚）
+     * 思路:在主走廊上按"行车时间"给各路口加相位偏移,让设计车速下的车辆在每个路口
+     * 到达时恰好赶上绿灯。
      *
-     * Bellman: Q(s_t, a_t) ← Q(s_t, a_t) + α[r_{t+1} + γ·max Q(s_{t+1}, ·) - Q(s_t, a_t)]
+     * 1. 识别 EW 走廊:同一 Y 坐标附近的路口序列(按 GW_Y_BIN 分组,按 X 排序)
+     * 2. 对每条走廊,以第一个路口为参考,按累计距离 / 设计车速 计算每个路口的行车时间
+     * 3. 用 synchronize(phase) 把该路口在 sim_time=0 时的相位设为 (cycle - travelTime) % cycle,
+     *    这样 sim_time=travelTime 时该路口恰好处于 EW 绿灯起点
      *
-     * 注意：更新的是 **上一轮** 的 (state, action)，不是当前轮 —
-     * 因为 reward 是 (s_t, a_t) → s_{t+1} 这个转移产生的结果。
+     * 限制:只协调 EW 主方向。NS 方向用同一周期但不协调(可以扩展到双向绿波但实现更复杂)。
      */
-    private void optimizeByQLearning() {
+    private void initializeGreenWave() {
+        // 统一所有路口的绿灯时长 — 保证 cycle 一致才能协调
         for (Node node : graph.getIntersectionNodes()) {
             TrafficLight light = node.getTrafficLight();
-            if (light == null) continue;
+            if (light != null) light.adjustGreenDurations(GW_EW_GREEN, GW_NS_GREEN);
+        }
 
-            String nodeId = node.getId();
-
-            // 1. 观察 s_{t+1}（当前状态）
-            int currentWaiting = flowManager.getWaitingFlowsAtNode(node)
-                                 + countActiveFlowsAtNode(node);
-            String state = getState(currentWaiting);
-            String stateKey = nodeId + ":" + state;
-
-            // 2. 计算多目标 reward（对应刚刚发生的 s_t → s_{t+1} 转移）
-            double reward = calculateMultiObjectiveReward(node, light, currentWaiting);
-
-            // 3. TD 更新 Q(s_t, a_t)（而非 s_{t+1}, a_{t+1}！）
-            String prevKey = prevStateKey.get(nodeId);
-            Integer prevAct = prevActionIdx.get(nodeId);
-            if (prevKey != null && prevAct != null) {
-                double[] prevQ = qTable.computeIfAbsent(prevKey, k -> new double[ACTIONS.length]);
-                double maxNextQ = getMaxQ(stateKey);
-                double currentQ = prevQ[prevAct];
-                prevQ[prevAct] = currentQ
-                    + LEARNING_RATE * (reward + DISCOUNT_FACTOR * maxNextQ - currentQ);
+        int cycle = 0;
+        {
+            List<Node> inters = graph.getIntersectionNodes();
+            if (!inters.isEmpty() && inters.get(0).getTrafficLight() != null) {
+                cycle = inters.get(0).getTrafficLight().getCycleLength();
             }
-
-            // 4. ε-greedy 选择 a_{t+1}
-            int actionIndex = selectAction(stateKey);
-            int greenDuration = ACTIONS[actionIndex];
-
-            // 5. 执行动作
-            light.adjustGreenDuration(greenDuration);
-
-            // 6. 登记下一轮要用的上下文
-            prevStateKey.put(nodeId, stateKey);
-            prevActionIdx.put(nodeId, actionIndex);
-            lastWaitingCounts.put(nodeId, currentWaiting);
-            lastThroughputNode.put(nodeId, currentThroughputAtNode(node));
-            lastGreenAtNode.put(nodeId, greenDuration);
-
-            log.debug("Q-Learning {} state={} action={}s reward={}",
-                nodeId, state, greenDuration, String.format("%.3f", reward));
         }
-    }
+        if (cycle == 0) return;
 
-    /**
-     * 多目标奖励函数
-     * R = w1·R_queue + w2·R_throughput + w3·R_speed + w4·R_stability
-     * 每个子项都先裁剪到 [-1, 1]，保证权重可解释、避免单项主导。
-     */
-    private double calculateMultiObjectiveReward(Node node, TrafficLight light, int currentWaiting) {
-        String nodeId = node.getId();
-
-        // R1: 排队改善（tanh 软归一化，10 辆车 ≈ 饱和）
-        int lastWaiting = lastWaitingCounts.getOrDefault(nodeId, currentWaiting);
-        double rQueue = Math.tanh((lastWaiting - currentWaiting) / 10.0);
-
-        // R2: 路口吞吐量增量
-        int currTp = currentThroughputAtNode(node);
-        int lastTp = lastThroughputNode.getOrDefault(nodeId, currTp);
-        double rThroughput = Math.min(1.0, Math.max(0, currTp - lastTp) / 5.0);
-
-        // R3: 路口周边边的平均速度比，映射到 [-1, 1]
-        double rSpeed = 2.0 * averageSpeedRatioAroundNode(node) - 1.0;
-
-        // R4: 绿灯时长抖动惩罚（0 秒 = 无罚，>= 45 秒 = 最大 -1）
-        int newGreen = light.getGreenDuration();
-        int prevGreen = lastGreenAtNode.getOrDefault(nodeId, newGreen);
-        double rStability = -Math.min(1.0, Math.abs(newGreen - prevGreen) / 45.0);
-
-        double reward = W_QUEUE * rQueue
-                      + W_THROUGHPUT * rThroughput
-                      + W_SPEED * rSpeed
-                      + W_STABILITY * rStability;
-        return Math.max(-1.0, Math.min(1.0, reward));
-    }
-
-    /** 路口周边边上的当前车辆总数（吞吐量代理指标） */
-    private int currentThroughputAtNode(Node node) {
-        int cars = 0;
-        if (node.getIncomingEdges() != null) {
-            for (Edge e : node.getIncomingEdges()) cars += e.getCurrentVehicleCount();
+        // 基于图连通性识别走廊:把所有 EW 边两端的路口 union 到一起;
+        // 再对每个连通分量按 X 排序,走 EW 边链累加"真实行车时间"作为 offset。
+        // 避免了按 Y 坐标粗聚类导致把不连通的路口硬凑成走廊的 bug。
+        Map<String, Node> nodeById = new HashMap<>();
+        Map<String, String> parent = new HashMap<>();
+        for (Node n : graph.getIntersectionNodes()) {
+            nodeById.put(n.getId(), n);
+            parent.put(n.getId(), n.getId());
         }
-        if (node.getOutgoingEdges() != null) {
-            for (Edge e : node.getOutgoingEdges()) cars += e.getCurrentVehicleCount();
-        }
-        return cars;
-    }
+        // union-find helpers
+        java.util.function.Function<String, String> find = new java.util.function.Function<>() {
+            @Override public String apply(String x) {
+                String p = parent.get(x);
+                while (p != null && !p.equals(x)) {
+                    String gp = parent.get(p);
+                    parent.put(x, gp);
+                    x = p;
+                    p = parent.get(x);
+                }
+                return x;
+            }
+        };
 
-    /** 路口周边边的平均 actualSpeed / speedLimit 比值（流畅率） */
-    private double averageSpeedRatioAroundNode(Node node) {
-        double sum = 0;
-        int n = 0;
-        if (node.getIncomingEdges() != null) {
-            for (Edge e : node.getIncomingEdges()) {
-                if (e.getSpeedLimit() > 0) {
-                    sum += e.getActualSpeed() / e.getSpeedLimit();
-                    n++;
+        // 收集所有 EW 边(起终点都是路口),union 两端
+        List<Edge> ewEdges = new ArrayList<>();
+        for (Edge e : graph.getEdges()) {
+            Node a = e.getFromNode();
+            Node b = e.getToNode();
+            if (a == null || b == null) continue;
+            if (a.getType() != NodeType.INTERSECTION || b.getType() != NodeType.INTERSECTION) continue;
+            double dx = Math.abs(b.getX() - a.getX());
+            double dy = Math.abs(b.getY() - a.getY());
+            if (dx > dy) {
+                ewEdges.add(e);
+                String ra = find.apply(a.getId());
+                String rb = find.apply(b.getId());
+                if (!ra.equals(rb)) parent.put(ra, rb);
+            }
+        }
+
+        // 按连通分量分组
+        Map<String, List<Node>> corridors = new HashMap<>();
+        for (String id : nodeById.keySet()) {
+            String root = find.apply(id);
+            // 只收录实际参与过 EW 边的节点(过滤纯 NS 孤岛)
+            corridors.computeIfAbsent(root, k -> new ArrayList<>()).add(nodeById.get(id));
+        }
+
+        // 邻接表:仅 EW 边(存边对象以直接取 idealTravelTime,避免依赖估算速度)
+        Map<String, List<Edge>> ewOutgoing = new HashMap<>();
+        for (Edge e : ewEdges) {
+            ewOutgoing.computeIfAbsent(e.getFromNode().getId(), k -> new ArrayList<>()).add(e);
+        }
+
+        int corridorsCoordinated = 0;
+        int nodesCoordinated = 0;
+
+        for (List<Node> corridor : corridors.values()) {
+            // 只保留真正出现在 EW 边上的节点 —— 孤立节点(没有 EW 边)跳过
+            List<Node> ewNodes = new ArrayList<>();
+            for (Node n : corridor) {
+                if (ewOutgoing.containsKey(n.getId())
+                    || ewEdges.stream().anyMatch(e -> e.getToNode().getId().equals(n.getId()))) {
+                    ewNodes.add(n);
                 }
             }
-        }
-        if (node.getOutgoingEdges() != null) {
-            for (Edge e : node.getOutgoingEdges()) {
-                if (e.getSpeedLimit() > 0) {
-                    sum += e.getActualSpeed() / e.getSpeedLimit();
-                    n++;
+            if (ewNodes.size() < GW_MIN_CORRIDOR_SIZE) continue;
+
+            // 按 X 排序,从最西端节点开始 BFS 沿 EW 边链累加真实行车秒数
+            // (直接用 Edge.getIdealTravelTime 避免依赖估算的设计车速 — 跟 sim 完全对齐)
+            ewNodes.sort(Comparator.comparingDouble(Node::getX));
+            Node root = ewNodes.get(0);
+            Map<String, Double> travelSecMap = new HashMap<>();
+            travelSecMap.put(root.getId(), 0.0);
+            ArrayDeque<Node> queue = new ArrayDeque<>();
+            queue.add(root);
+            while (!queue.isEmpty()) {
+                Node cur = queue.poll();
+                List<Edge> outs = ewOutgoing.getOrDefault(cur.getId(), Collections.emptyList());
+                for (Edge e : outs) {
+                    Node nxt = e.getToNode();
+                    double edgeSec = e.getIdealTravelTime() * 60.0; // 分钟 → 秒
+                    double newTravel = travelSecMap.get(cur.getId()) + edgeSec;
+                    if (!travelSecMap.containsKey(nxt.getId()) || newTravel < travelSecMap.get(nxt.getId())) {
+                        travelSecMap.put(nxt.getId(), newTravel);
+                        queue.add(nxt);
+                    }
                 }
             }
-        }
-        return n == 0 ? 1.0 : sum / n;
-    }
 
-    /**
-     * 将等待车辆数映射为离散状态
-     */
-    private String getState(int waitingCount) {
-        if (waitingCount <= 5) return "LOW";
-        if (waitingCount <= 15) return "MEDIUM";
-        if (waitingCount <= 30) return "HIGH";
-        return "VERY_HIGH";
-    }
-
-    /**
-     * ε-greedy 动作选择
-     */
-    private int selectAction(String stateKey) {
-        if (random.nextDouble() < EPSILON) {
-            // 探索：随机选择
-            return random.nextInt(ACTIONS.length);
-        }
-
-        // 利用：选择 Q 值最大的动作
-        double[] qValues = qTable.computeIfAbsent(stateKey, k -> new double[ACTIONS.length]);
-        int bestAction = 0;
-        double bestQ = qValues[0];
-        for (int i = 1; i < qValues.length; i++) {
-            if (qValues[i] > bestQ) {
-                bestQ = qValues[i];
-                bestAction = i;
+            // 双向绿波(Bi-directional Green Wave, Little 1966):
+            // W→E 方向最优 offset = t_i mod C  (cumulative travel time)
+            // E→W 方向最优 offset = (T - t_i) mod C  (T = 走廊总行车时间)
+            //
+            // 两者不可能同时 100% 满足(除非相邻路口间隔正好 C/2)。折中方案:
+            // 根据该节点 W→E 方向 offset 与 E→W 方向 offset 的相位差,
+            // 选择满足两个方向"绿灯窗口"并集最大的那个 offset。
+            //
+            // 等价启发式:若 W→E offset 与 E→W offset 相差 ≤ EW 绿时长,两者绿窗重叠 → 任选;
+            // 否则选更接近 "绿窗中点" 的 offset。
+            double totalSec = 0;
+            for (Node n : ewNodes) {
+                Double s = travelSecMap.get(n.getId());
+                if (s != null && s > totalSec) totalSec = s;
             }
-        }
-        return bestAction;
-    }
+            int T = (int) Math.round(totalSec);
+            int greenWindow = GW_EW_GREEN; // 20s
+            int halfWindow = greenWindow / 2;
 
-    /**
-     * 获取某状态下的最大 Q 值
-     */
-    private double getMaxQ(String stateKey) {
-        double[] qValues = qTable.getOrDefault(stateKey, new double[ACTIONS.length]);
-        double maxQ = qValues[0];
-        for (int i = 1; i < qValues.length; i++) {
-            maxQ = Math.max(maxQ, qValues[i]);
-        }
-        return maxQ;
-    }
+            for (Node n : ewNodes) {
+                Double t = travelSecMap.get(n.getId());
+                if (t == null) continue;
+                int ti = (int) Math.round(t);
+                // 两个方向需要的 offset(mod C)
+                int offsetEW = ((ti % cycle) + cycle) % cycle;
+                int offsetWE = (((T - ti) % cycle) + cycle) % cycle;
+                // 两 offset 在环上的相位差(取 [0, C/2])
+                int diff = Math.abs(offsetEW - offsetWE);
+                if (diff > cycle / 2) diff = cycle - diff;
 
-    /**
-     * 计算奖励函数
-     * 等待车辆减少 → 正奖励，增加 → 负奖励
-     */
-    private double calculateReward(int lastWaiting, int currentWaiting) {
-        int improvement = lastWaiting - currentWaiting;
-        if (improvement > 0) {
-            return Math.min(improvement * 0.5, 5.0); // 正奖励，上限5
-        } else if (improvement < 0) {
-            return Math.max(improvement * 0.8, -5.0); // 负奖励，下限-5
+                int chosenOffset;
+                if (diff <= greenWindow) {
+                    // 两方向绿窗重叠,选中点使两边都在绿窗中
+                    // 环上平均 offset
+                    int sum = offsetEW + offsetWE;
+                    chosenOffset = (offsetEW - offsetWE + cycle) % cycle < cycle / 2
+                        ? ((offsetEW + (offsetEW - offsetWE + cycle) % cycle / 2) % cycle)
+                        : ((offsetEW + (offsetWE - offsetEW + cycle) % cycle / 2) % cycle);
+                    // 简化:直接平均(环上处理)
+                    chosenOffset = ((offsetEW + offsetWE) / 2) % cycle;
+                } else {
+                    // 不重叠,选 W→E(主通勤方向)
+                    chosenOffset = offsetEW;
+                }
+
+                int phaseAtT0 = (cycle - chosenOffset) % cycle;
+                TrafficLight light = n.getTrafficLight();
+                if (light != null) {
+                    light.synchronize(phaseAtT0);
+                    nodesCoordinated++;
+                }
+            }
+            corridorsCoordinated++;
         }
-        return 0.1; // 保持不变给微小正奖励
+
+        log.info("Green Wave 双向协调完成: cycle={}s EW={}s NS={}s, 走廊={}, 节点={} (基于 Edge.idealTravelTime)",
+                cycle, GW_EW_GREEN, GW_NS_GREEN, corridorsCoordinated, nodesCoordinated);
     }
 
     // ==================== 工具方法 ====================
@@ -441,8 +460,8 @@ public class SignalController {
 
     public enum OptimizationMode {
         FIXED_TIME,         // 固定时长模式
-        TRAFFIC_ADAPTIVE,   // Webster 公式自适应模式
-        LEARNING_BASED      // Q-Learning 强化学习模式
+        TRAFFIC_ADAPTIVE,   // Webster 公式 + 等待时间加权的自适应模式
+        GREEN_WAVE          // 绿波协调(按设计车速给主走廊各路口设相位偏移)
     }
 
     @Getter

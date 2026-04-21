@@ -77,9 +77,9 @@ const DemoController = ({ onStateChange }) => {
       await simulationAPI.setSignalMode('TRAFFIC_ADAPTIVE');
       await sleep(6000);
 
-      // Phase 7: Switch to INTELLIGENT
-      setDemoPhase('Switching to INTELLIGENT signals...');
-      await simulationAPI.setSignalMode('LEARNING_BASED');
+      // Phase 7: Switch to GREEN WAVE
+      setDemoPhase('Switching to GREEN WAVE signals...');
+      await simulationAPI.setSignalMode('GREEN_WAVE');
       await sleep(4000);
 
       // Phase 8: Running

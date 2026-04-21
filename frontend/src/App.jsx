@@ -226,7 +226,7 @@ function App() {
 
         <div className="section">
           <ErrorBoundary title="Algorithm comparison error">
-            <AlgorithmComparison />
+            <AlgorithmComparison simulationState={simulationState} />
           </ErrorBoundary>
         </div>
 

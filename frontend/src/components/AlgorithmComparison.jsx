@@ -15,7 +15,7 @@ const ALGO_LABELS = {
   dynamic: 'Dynamic Routing',
 };
 
-const AlgorithmComparison = () => {
+const AlgorithmComparison = ({ simulationState }) => {
   const [graphData, setGraphData] = useState(null);
   const [startNode, setStartNode] = useState('');
   const [endNode, setEndNode] = useState('');
@@ -28,18 +28,29 @@ const AlgorithmComparison = () => {
   const svgHeight = 500;
   const padding = 40;
 
+  const loadGraph = async () => {
+    try {
+      const response = await api.get('/simulation/graph');
+      if (response.data && Array.isArray(response.data.nodes) && response.data.nodes.length > 0) {
+        setGraphData(response.data);
+      }
+    } catch (err) {
+      // Graph not available yet — will retry on next trigger
+    }
+  };
+
+  // Initial mount: try to load graph
   useEffect(() => {
     loadGraph();
   }, []);
 
-  const loadGraph = async () => {
-    try {
-      const response = await api.get('/simulation/graph');
-      setGraphData(response.data);
-    } catch (err) {
-      // Graph not available yet
+  // Re-fetch when simulation transitions to an initialized/running state
+  // (fixes: user clicks Initialize → dropdowns stayed empty until page refresh)
+  useEffect(() => {
+    if (simulationState && simulationState !== 'STOPPED' && (!graphData || !graphData.nodes?.length)) {
+      loadGraph();
     }
-  };
+  }, [simulationState]);
 
   const coordBounds = useMemo(() => {
     if (!graphData || !graphData.nodes) return null;
@@ -92,6 +103,27 @@ const AlgorithmComparison = () => {
   const buildPathD = (coords) => {
     if (coords.length < 2) return '';
     return coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x} ${c.y}`).join(' ');
+  };
+
+  /**
+   * 法向偏移路径坐标 —— 让多条重叠路径"并排"显示,避免一条遮另一条。
+   * 每个顶点基于前后段的平均法向量偏移 offset 像素。
+   */
+  const offsetPath = (coords, offset) => {
+    if (!coords || coords.length < 2 || offset === 0) return coords;
+    const result = [];
+    for (let i = 0; i < coords.length; i++) {
+      // 前后段法向量(垂直于切向,逆时针 90°)
+      const prev = coords[i - 1] || coords[i];
+      const next = coords[i + 1] || coords[i];
+      const dx = next.x - prev.x;
+      const dy = next.y - prev.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      result.push({ x: coords[i].x + nx * offset, y: coords[i].y + ny * offset });
+    }
+    return result;
   };
 
   // Compute total path length for animation
@@ -208,11 +240,13 @@ const AlgorithmComparison = () => {
               })}
             </g>
 
-            {/* Algorithm Paths */}
-            {['dijkstra', 'aStar', 'dynamic'].map((algo) => {
+            {/* Algorithm Paths — 法向偏移避免重叠路径互相遮挡 */}
+            {['dijkstra', 'aStar', 'dynamic'].map((algo, idx) => {
               const data = results[algo];
               if (!data || !data.reachable) return null;
-              const coords = getPathCoords(data.path);
+              // idx=0,1,2 → offset -4, 0, +4 px;视觉上三条路径并排不重叠
+              const offsetPx = (idx - 1) * 4;
+              const coords = offsetPath(getPathCoords(data.path), offsetPx);
               const d = buildPathD(coords);
               const pathLen = computePathLength(coords);
               const dashStyle = algo === 'aStar' ? '10,5' : algo === 'dynamic' ? '5,5' : 'none';

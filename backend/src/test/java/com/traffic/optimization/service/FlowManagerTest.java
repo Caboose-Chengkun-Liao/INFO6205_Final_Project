@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * FlowManager 单元测试
+ * FlowManager unit tests
  */
 class FlowManagerTest {
 
@@ -40,7 +40,7 @@ class FlowManagerTest {
 
     @Test
     void testCreateFlow_noPath() {
-        // 添加一个孤立节点
+        // Add an isolated node with no connected edges
         graph.addNode(new Node("ISOLATED", "Isolated", NodeType.BOUNDARY, 99, 99));
         assertThrows(IllegalArgumentException.class, () -> {
             flowManager.createFlow("A", "ISOLATED", 10);
@@ -90,7 +90,7 @@ class FlowManagerTest {
     @Test
     void testGetWaitingFlowsAtNode() {
         TrafficFlow flow = flowManager.createFlow("A", "B", 5);
-        // 默认 WAITING 状态，getWaitingFlowsAtNode 查找 BLOCKED 状态
+        // Default state is WAITING; getWaitingFlowsAtNode searches for BLOCKED state
         flow.setState(TrafficFlow.FlowState.BLOCKED);
 
         Node nodeA = graph.getNode("A");

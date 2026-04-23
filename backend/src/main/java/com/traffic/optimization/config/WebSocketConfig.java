@@ -5,7 +5,7 @@ import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.*;
 
 /**
- * WebSocket配置 - 用于实时数据推送
+ * WebSocket configuration - enables real-time data push
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -14,23 +14,23 @@ import org.springframework.web.socket.config.annotation.*;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     /**
-     * 配置消息代理
+     * Configure the message broker
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        // 启用简单消息代理，用于向客户端发送消息
+        // Enable a simple message broker for pushing messages to clients
         config.enableSimpleBroker("/topic");
 
-        // 设置应用目标前缀
+        // Set the application destination prefix
         config.setApplicationDestinationPrefixes("/app");
     }
 
     /**
-     * 注册STOMP端点
+     * Register STOMP endpoints
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 注册WebSocket端点
+        // Register the WebSocket endpoint
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();

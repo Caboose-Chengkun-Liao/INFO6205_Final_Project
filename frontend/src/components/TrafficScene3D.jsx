@@ -81,6 +81,16 @@ const TrafficScene3D = ({ signals = [] }) => {
     return computeCoordBounds(graphData.nodes);
   }, [graphData]);
 
+  // Texture plane must match the network extent exactly (no padding),
+  // because the map image was generated to cover precisely this lat/lng range.
+  const groundSize = useMemo(() => {
+    if (!coordBounds) return { width: 18.66, depth: 16.19 };
+    return {
+      width: coordBounds.maxX - coordBounds.minX,
+      depth: coordBounds.maxY - coordBounds.minY,
+    };
+  }, [coordBounds]);
+
   const to3D = useCallback((x, y) => {
     if (!coordBounds) return [0, 0, 0];
     const cx = (coordBounds.minX + coordBounds.maxX) / 2;
@@ -155,7 +165,12 @@ const TrafficScene3D = ({ signals = [] }) => {
       >
         <CameraAnimator active={flyAround} />
         <SceneLighting nightMode={nightMode} />
-        <GroundPlane nightMode={nightMode} />
+        <GroundPlane
+          nightMode={nightMode}
+          width={groundSize.width}
+          depth={groundSize.depth}
+          coordBounds={coordBounds}
+        />
 
         {graphData && (
           <>
@@ -199,6 +214,34 @@ const TrafficScene3D = ({ signals = [] }) => {
           enableZoom={false}
         />
       </Canvas>
+
+      {/* Compass needle overlay */}
+      <div style={styles.compassWrap}>
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          {/* N tip – red */}
+          <polygon points="24,5 21,24 24,21 27,24" fill="#d42b2b" />
+          {/* S tip – gray */}
+          <polygon points="24,43 21,24 24,27 27,24" fill="#aaa" />
+          {/* W tip */}
+          <polygon points="5,24 24,21 21,24 24,27" fill="#aaa" />
+          {/* E tip */}
+          <polygon points="43,24 24,21 27,24 24,27" fill="#aaa" />
+          {/* Centre */}
+          <circle cx="24" cy="24" r="3.2" fill="#fff" stroke="#888" strokeWidth="0.8" />
+          {/* N label */}
+          <text x="24" y="4" textAnchor="middle" fontSize="9" fontWeight="bold"
+                fill="#c01010" dominantBaseline="auto">N</text>
+          {/* S label */}
+          <text x="24" y="48" textAnchor="middle" fontSize="7.5" fontWeight="600"
+                fill="#666" dominantBaseline="auto">S</text>
+          {/* W label */}
+          <text x="1"  y="26.5" textAnchor="start"  fontSize="7.5" fontWeight="600"
+                fill="#666" dominantBaseline="middle">W</text>
+          {/* E label */}
+          <text x="47" y="26.5" textAnchor="end"    fontSize="7.5" fontWeight="600"
+                fill="#666" dominantBaseline="middle">E</text>
+        </svg>
+      </div>
 
       {/* Selected node detail panel */}
       {selectedNode && (
@@ -321,6 +364,21 @@ const styles = {
     cursor: 'pointer',
     color: '#999',
     padding: '0 4px',
+  },
+  compassWrap: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    zIndex: 10,
+    width: 60,
+    height: 60,
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.88)',
+    backdropFilter: 'saturate(180%) blur(10px)',
+    boxShadow: '0 2px 14px rgba(0,0,0,0.18)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 };
 

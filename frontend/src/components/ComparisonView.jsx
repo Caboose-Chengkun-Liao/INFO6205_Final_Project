@@ -4,7 +4,6 @@ import api from '../services/api';
 import Mini3DScene from './three/Mini3DScene';
 import ComparisonEfficiencyChart from './ComparisonEfficiencyChart';
 import ComparisonOperationalCharts from './ComparisonOperationalCharts';
-import ModeRadarChart from './ModeRadarChart';
 
 const MODES = [
   { label: 'FIXED TIMING', color: '#FF453A', key: 'FIXED_TIME' },
@@ -178,8 +177,6 @@ const ComparisonView = ({ onBack }) => {
       {/* Operational KPIs: completed flows + stopped % over time */}
       {running && <ComparisonOperationalCharts history={metricsHistory} />}
 
-      {/* Multi-dimensional radar chart */}
-      {running && metrics.length === 3 && <ModeRadarChart metrics={metrics} />}
     </div>
   );
 };

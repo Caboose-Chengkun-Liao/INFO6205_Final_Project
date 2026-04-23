@@ -1,125 +1,125 @@
-# 项目设置和使用指南
+# Project Setup and Usage Guide
 
-## 当前项目状态
+## Current Project Status
 
-本项目已完成以下核心功能的代码实现：
+The following core features have been implemented:
 
-### ✅ 已完成的后端功能
+### Completed Backend Features
 
-1. **数据模型** (`backend/src/main/java/com/traffic/optimization/model/`)
-   - `Node.java` - 路口/节点模型
-   - `Edge.java` - 道路/边模型 (包含动态速度调整算法)
-   - `Graph.java` - 道路网络图
-   - `TrafficFlow.java` - 交通流模型
-   - `TrafficLight.java` - 信号灯模型
-   - `NodeType.java` - 节点类型枚举
+1. **Data Models** (`backend/src/main/java/com/traffic/optimization/model/`)
+   - `Node.java` - Intersection / node model
+   - `Edge.java` - Road / edge model (includes dynamic speed adjustment algorithm)
+   - `Graph.java` - Road network graph
+   - `TrafficFlow.java` - Traffic flow model
+   - `TrafficLight.java` - Signal light model
+   - `NodeType.java` - Node type enum
 
-2. **算法实现** (`backend/src/main/java/com/traffic/optimization/algorithm/`)
-   - `DijkstraAlgorithm.java` - 最短路径算法
+2. **Algorithm Implementations** (`backend/src/main/java/com/traffic/optimization/algorithm/`)
+   - `DijkstraAlgorithm.java` - Shortest path algorithm
 
-3. **业务逻辑服务** (`backend/src/main/java/com/traffic/optimization/service/`)
-   - `SimulationEngine.java` - 仿真引擎
-   - `FlowManager.java` - 交通流管理器
-   - `SignalController.java` - 信号灯控制器
-   - `EfficiencyCalculator.java` - 效率计算器
+3. **Business Logic Services** (`backend/src/main/java/com/traffic/optimization/service/`)
+   - `SimulationEngine.java` - Simulation engine
+   - `FlowManager.java` - Traffic flow manager
+   - `SignalController.java` - Signal light controller
+   - `EfficiencyCalculator.java` - Efficiency calculator
 
-4. **REST API控制器** (`backend/src/main/java/com/traffic/optimization/controller/`)
-   - `SimulationController.java` - 仿真控制API
+4. **REST API Controllers** (`backend/src/main/java/com/traffic/optimization/controller/`)
+   - `SimulationController.java` - Simulation control API
 
-5. **WebSocket配置** (`backend/src/main/java/com/traffic/optimization/`)
-   - `WebSocketConfig.java` - WebSocket配置
-   - `SimulationWebSocketHandler.java` - 实时数据推送
+5. **WebSocket Configuration** (`backend/src/main/java/com/traffic/optimization/`)
+   - `WebSocketConfig.java` - WebSocket configuration
+   - `SimulationWebSocketHandler.java` - Real-time data push
 
-6. **测试** (`backend/src/test/java/`)
-   - `DijkstraAlgorithmTest.java` - Dijkstra算法单元测试
+6. **Tests** (`backend/src/test/java/`)
+   - `DijkstraAlgorithmTest.java` - Dijkstra algorithm unit tests
 
-### ✅ 已完成的前端功能
+### Completed Frontend Features
 
-1. **React组件** (`frontend/src/components/`)
-   - `ControlPanel.jsx` - 仿真控制面板
-   - `MetricsDisplay.jsx` - 性能指标展示
-   - `MetricsChart.jsx` - 效率趋势图表
+1. **React Components** (`frontend/src/components/`)
+   - `ControlPanel.jsx` - Simulation control panel
+   - `MetricsDisplay.jsx` - Performance metrics display
+   - `MetricsChart.jsx` - Efficiency trend chart
 
-2. **服务层** (`frontend/src/services/`)
-   - `api.js` - REST API客户端
-   - `websocket.js` - WebSocket客户端
+2. **Service Layer** (`frontend/src/services/`)
+   - `api.js` - REST API client
+   - `websocket.js` - WebSocket client
 
-3. **主应用**
-   - `App.jsx` - 主应用组件
-   - `App.css` - 样式文件 (专为桌面端优化，移除mobile响应式设计)
-   - `index.css` - 全局样式 (全宽布局)
+3. **Main Application**
+   - `App.jsx` - Main application component
+   - `App.css` - Stylesheet (desktop-optimized; mobile responsive design removed)
+   - `index.css` - Global styles (full-width layout)
 
 ---
 
-## 已知问题
+## Known Issues
 
-### Lombok编译问题
+### Lombok Compilation Problem
 
-当前后端项目使用了Lombok注解（`@Data`, `@Getter`等）来简化代码。如果遇到编译错误显示找不到getter/setter方法，请执行以下操作：
+The backend uses Lombok annotations (`@Data`, `@Getter`, etc.) to reduce boilerplate. If you encounter compilation errors about missing getter / setter methods, follow the steps below:
 
-#### 方案1: 配置IDE的Lombok支持
+#### Option 1: Configure Lombok Support in Your IDE
 
 **IntelliJ IDEA:**
-1. 安装Lombok插件: `Preferences` -> `Plugins` -> 搜索 "Lombok" -> 安装
-2. 启用注解处理: `Preferences` -> `Build, Execution, Deployment` -> `Compiler` -> `Annotation Processors` -> 勾选 "Enable annotation processing"
-3. 重新导入Maven项目
+1. Install the Lombok plugin: `Preferences` -> `Plugins` -> search "Lombok" -> Install
+2. Enable annotation processing: `Preferences` -> `Build, Execution, Deployment` -> `Compiler` -> `Annotation Processors` -> check "Enable annotation processing"
+3. Re-import the Maven project
 
 **Eclipse:**
-1. 下载 lombok.jar
-2. 运行 `java -jar lombok.jar`
-3. 选择Eclipse安装目录
-4. 重启Eclipse
+1. Download `lombok.jar`
+2. Run `java -jar lombok.jar`
+3. Select the Eclipse installation directory
+4. Restart Eclipse
 
-#### 方案2: 移除Lombok依赖（推荐用于快速测试）
+#### Option 2: Remove the Lombok Dependency (recommended for quick testing)
 
-如果只是想快速运行项目，可以手动为每个使用`@Data`的类添加getter/setter方法。
+If you just want to run the project quickly, manually add getters and setters to each class that uses `@Data`.
 
 ---
 
-## 启动步骤
+## Startup Steps
 
-### 1. 后端启动
+### 1. Start the Backend
 
 ```bash
 cd backend
 
-# 跳过测试编译并运行
+# Skip tests and run
 mvn spring-boot:run -DskipTests
 
-# 或者先编译再运行
+# Or build first, then run
 mvn clean install -DskipTests
 mvn spring-boot:run
 ```
 
-后端将在 `http://localhost:8080` 启动
+The backend starts at `http://localhost:8080`
 
-### 2. 前端启动
+### 2. Start the Frontend
 
 ```bash
 cd frontend
 
-# 安装依赖（首次运行）
+# Install dependencies (first run only)
 npm install
 
-# 启动开发服务器
+# Start the development server
 npm run dev
 ```
 
-前端将在 `http://localhost:5173` 启动
+The frontend starts at `http://localhost:5173`
 
 ---
 
-## 使用说明
+## Usage Instructions
 
-### 1. 初始化仿真
+### 1. Initialize the Simulation
 
-1. 打开浏览器访问 `http://localhost:5173`
-2. 点击"初始化"按钮，系统会创建默认的道路网络
-3. 等待初始化完成
+1. Open a browser and go to `http://localhost:5173`
+2. Click the "Initialize" button — the system creates the default road network
+3. Wait for initialization to complete
 
-### 2. 创建交通流
+### 2. Create Traffic Flows
 
-使用API或前端界面创建交通流：
+Use the API or the frontend UI to create traffic flows:
 
 ```bash
 curl -X POST http://localhost:8080/api/simulation/flows \
@@ -131,106 +131,106 @@ curl -X POST http://localhost:8080/api/simulation/flows \
   }'
 ```
 
-### 3. 启动仿真
+### 3. Start the Simulation
 
-点击"启动"按钮，仿真开始运行。系统会：
-- 每秒更新交通流位置
-- 每秒更新信号灯状态
-- 每5秒计算性能指标
-- 实时推送数据到前端
+Click the "Start" button. The system will:
+- Update traffic flow positions every second
+- Update signal light states every second
+- Calculate performance metrics every 5 seconds
+- Push data to the frontend in real time
 
-### 4. 查看实时数据
+### 4. View Real-time Data
 
-前端会实时显示：
-- 仿真状态和时间
-- 效率值、吞吐量、平均速度等性能指标
-- 效率随时间变化的趋势图
+The frontend displays in real time:
+- Simulation state and elapsed time
+- Performance metrics: efficiency, throughput, average speed, etc.
+- Efficiency trend chart over time
 
 ---
 
-## API使用示例
+## API Usage Examples
 
-### 获取仿真状态
+### Get Simulation Status
 
 ```bash
 curl http://localhost:8080/api/simulation/status
 ```
 
-### 获取性能指标
+### Get Performance Metrics
 
 ```bash
 curl http://localhost:8080/api/simulation/metrics
 ```
 
-### 获取效率趋势
+### Get Efficiency Trend
 
 ```bash
 curl http://localhost:8080/api/simulation/efficiency/trend?count=50
 ```
 
-### 设置信号优化模式
+### Set Signal Optimization Mode
 
 ```bash
 curl -X POST "http://localhost:8080/api/simulation/signals/mode?mode=TRAFFIC_ADAPTIVE"
 ```
 
-可用模式:
-- `FIXED_TIME` - 固定时长
-- `TRAFFIC_ADAPTIVE` - 交通自适应
-- `LEARNING_BASED` - 基于学习
+Available modes:
+- `FIXED_TIME` - Fixed timing
+- `TRAFFIC_ADAPTIVE` - Traffic-adaptive (Webster formula)
+- `GREEN_WAVE` - Green wave corridor coordination
 
 ---
 
-## 下一步开发建议
+## Next Development Steps
 
-1. **实现默认地图数据**
-   - 在`SimulationController.createDefaultGraph()`中添加示例道路网络
-   - 或从配置文件/数据库加载真实地图数据
+1. **Implement default map data**
+   - Add a sample road network in `SimulationController.createDefaultGraph()`
+   - Or load real map data from a configuration file or database
 
-2. **增强前端可视化**
-   - 添加交互式地图显示道路网络
-   - 实时显示车辆位置和信号灯状态
-   - 支持手动调整信号灯参数
+2. **Enhance frontend visualization**
+   - Add an interactive map showing the road network
+   - Display vehicle positions and signal light states in real time
+   - Support manual adjustment of signal light parameters
 
-3. **完善测试**
-   - 添加更多单元测试
-   - 集成测试
-   - 端到端测试
+3. **Improve test coverage**
+   - Add more unit tests
+   - Integration tests
+   - End-to-end tests
 
-4. **性能优化**
-   - 大规模交通网络压力测试
-   - 优化算法性能
-   - 数据库持久化
-
----
-
-## 故障排除
-
-### 问题: 前端无法连接WebSocket
-
-**解决方案:**
-- 确保后端已启动
-- 检查CORS配置
-- 查看浏览器控制台错误信息
-
-### 问题: Maven编译失败
-
-**解决方案:**
-- 确保JDK版本为17或更高
-- 清理Maven缓存: `mvn clean`
-- 删除`~/.m2/repository`中的缓存并重新下载依赖
-
-### 问题: 前端npm install失败
-
-**解决方案:**
-- 确保Node.js版本为16或更高
-- 清理npm缓存: `npm cache clean --force`
-- 删除`node_modules`和`package-lock.json`后重新安装
+4. **Performance optimization**
+   - Stress test with large-scale traffic networks
+   - Optimize algorithm performance
+   - Add database persistence
 
 ---
 
-## 联系方式
+## Troubleshooting
 
-如有问题，请联系项目作者：
+### Problem: Frontend cannot connect via WebSocket
+
+**Solution:**
+- Ensure the backend is running
+- Check the CORS configuration
+- Look at the browser console for error messages
+
+### Problem: Maven build fails
+
+**Solution:**
+- Ensure the JDK version is 17 or higher
+- Clean Maven: `mvn clean`
+- Delete the cache under `~/.m2/repository` and re-download dependencies
+
+### Problem: Frontend npm install fails
+
+**Solution:**
+- Ensure Node.js version is 16 or higher
+- Clear the npm cache: `npm cache clean --force`
+- Delete `node_modules` and `package-lock.json`, then reinstall
+
+---
+
+## Contact
+
+For questions, please contact the project authors:
 - Chengkun Liao
 - Mingjie Shen

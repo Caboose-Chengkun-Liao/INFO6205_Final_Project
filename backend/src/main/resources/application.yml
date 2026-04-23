@@ -5,14 +5,14 @@ spring:
   application:
     name: traffic-optimization
 
-# CORS配置 - 允许前端访问
+# CORS configuration - allow frontend access
 cors:
   allowed-origins: http://localhost:3000,http://localhost:5173
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
 
-# 日志配置
+# Logging configuration
 logging:
   level:
     com.traffic.optimization: DEBUG
@@ -20,13 +20,13 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
-# 仿真参数配置
+# Simulation parameter configuration
 simulation:
-  # 时间步长（秒）
+  # Time step (seconds)
   time-step: 1
-  # 道路单位容量（车辆/公里）
+  # Road unit capacity (vehicles per kilometer)
   road-capacity-per-km: 100
-  # 统一速度限制（公里/小时）
+  # Uniform speed limit (kilometers per hour)
   speed-limit: 60
-  # 效率计算间隔（秒）
+  # Efficiency calculation interval (seconds)
   efficiency-calculation-interval: 3600

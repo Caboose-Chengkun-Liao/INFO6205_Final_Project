@@ -106,14 +106,15 @@ const AlgorithmComparison = ({ simulationState }) => {
   };
 
   /**
-   * 法向偏移路径坐标 —— 让多条重叠路径"并排"显示,避免一条遮另一条。
-   * 每个顶点基于前后段的平均法向量偏移 offset 像素。
+   * Normal-offset path coordinates — shifts overlapping paths sideways so they display
+   * side by side instead of one obscuring another.
+   * Each vertex is offset by `offset` pixels along the average normal of the surrounding segments.
    */
   const offsetPath = (coords, offset) => {
     if (!coords || coords.length < 2 || offset === 0) return coords;
     const result = [];
     for (let i = 0; i < coords.length; i++) {
-      // 前后段法向量(垂直于切向,逆时针 90°)
+      // Normal vector of preceding and following segments (perpendicular to tangent, 90° counter-clockwise)
       const prev = coords[i - 1] || coords[i];
       const next = coords[i + 1] || coords[i];
       const dx = next.x - prev.x;
@@ -240,11 +241,11 @@ const AlgorithmComparison = ({ simulationState }) => {
               })}
             </g>
 
-            {/* Algorithm Paths — 法向偏移避免重叠路径互相遮挡 */}
+            {/* Algorithm Paths — normal-offset to prevent overlapping paths from obscuring each other */}
             {['dijkstra', 'aStar', 'dynamic'].map((algo, idx) => {
               const data = results[algo];
               if (!data || !data.reachable) return null;
-              // idx=0,1,2 → offset -4, 0, +4 px;视觉上三条路径并排不重叠
+              // idx=0,1,2 → offset -4, 0, +4 px; three paths displayed side by side without overlap
               const offsetPx = (idx - 1) * 4;
               const coords = offsetPath(getPathCoords(data.path), offsetPx);
               const d = buildPathD(coords);

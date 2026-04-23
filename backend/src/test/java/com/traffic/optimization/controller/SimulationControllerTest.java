@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * SimulationController API 集成测试
+ * SimulationController API integration tests
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,7 +37,7 @@ class SimulationControllerTest {
     @Test
     @Order(2)
     void testStart() throws Exception {
-        // 先初始化
+        // Initialize first
         mockMvc.perform(post("/api/simulation/initialize"));
 
         mockMvc.perform(post("/api/simulation/start"))
@@ -112,7 +112,7 @@ class SimulationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"entryPoint\":\"N1\",\"destination\":\"N1\",\"numberOfCars\":10}"))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("入口和目的地不能相同"));
+            .andExpect(jsonPath("$.error").value("Entry and destination cannot be the same"));
     }
 
     @Test
@@ -124,7 +124,7 @@ class SimulationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"entryPoint\":\"N1\",\"destination\":\"S1\",\"numberOfCars\":0}"))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("车辆数量必须大于0"));
+            .andExpect(jsonPath("$.error").value("Number of vehicles must be greater than 0"));
     }
 
     @Test
@@ -136,7 +136,7 @@ class SimulationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"entryPoint\":\"N1\",\"destination\":\"S1\",\"numberOfCars\":999}"))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.error").value("单次车辆数量不能超过200"));
+            .andExpect(jsonPath("$.error").value("Number of vehicles per request cannot exceed 200"));
     }
 
     @Test

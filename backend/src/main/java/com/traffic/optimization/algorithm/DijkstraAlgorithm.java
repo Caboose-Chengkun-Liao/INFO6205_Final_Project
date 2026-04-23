@@ -7,19 +7,19 @@ import com.traffic.optimization.model.Node;
 import java.util.*;
 
 /**
- * 路径规划算法实现 - Dijkstra 和 A*
+ * Path-finding algorithm implementations - Dijkstra and A*
  *
  * @author Chengkun Liao, Mingjie Shen
  */
 public class DijkstraAlgorithm {
 
     /**
-     * 计算从起点到终点的最短路径 (Dijkstra)
+     * Find the shortest path from start to end (Dijkstra)
      *
-     * @param graph 道路网络图
-     * @param start 起点节点
-     * @param end   终点节点
-     * @return 最短路径的节点列表，如果不存在路径则返回null
+     * @param graph road network graph
+     * @param start source node
+     * @param end   destination node
+     * @return list of nodes on the shortest path, or null if no path exists
      */
     public static List<Node> findShortestPath(Graph graph, Node start, Node end) {
         if (start == null || end == null) {
@@ -30,45 +30,45 @@ public class DijkstraAlgorithm {
             return Collections.singletonList(start);
         }
 
-        // 距离映射：每个节点到起点的最短距离
+        // Distance map: shortest distance from the source to each node
         Map<Node, Double> distances = new HashMap<>();
 
-        // 前驱节点映射：用于重建路径
+        // Predecessor map: used to reconstruct the path
         Map<Node, Node> predecessors = new HashMap<>();
 
-        // 已访问节点集合
+        // Set of visited nodes
         Set<Node> visited = new HashSet<>();
 
-        // 优先队列：按距离排序
+        // Priority queue sorted by distance
         PriorityQueue<NodeDistance> queue = new PriorityQueue<>(
             Comparator.comparingDouble(nd -> nd.distance)
         );
 
-        // 初始化
+        // Initialize
         for (Node node : graph.getAllNodes()) {
             distances.put(node, Double.POSITIVE_INFINITY);
         }
         distances.put(start, 0.0);
         queue.offer(new NodeDistance(start, 0.0));
 
-        // Dijkstra主循环
+        // Dijkstra main loop
         while (!queue.isEmpty()) {
             NodeDistance current = queue.poll();
             Node currentNode = current.node;
 
-            // 如果已访问过，跳过
+            // Skip already-visited nodes
             if (visited.contains(currentNode)) {
                 continue;
             }
 
             visited.add(currentNode);
 
-            // 如果到达目标节点，提前终止
+            // Early termination when the destination is reached
             if (currentNode.equals(end)) {
                 break;
             }
 
-            // 检查所有邻居
+            // Examine all neighbors
             for (Edge edge : currentNode.getOutgoingEdges()) {
                 Node neighbor = edge.getToNode();
 
@@ -76,10 +76,10 @@ public class DijkstraAlgorithm {
                     continue;
                 }
 
-                // 计算通过当前节点到邻居的距离
+                // Calculate the distance to the neighbor via the current node
                 double newDistance = distances.get(currentNode) + edge.getDistance();
 
-                // 如果找到更短的路径，更新
+                // Update if a shorter path is found
                 if (newDistance < distances.get(neighbor)) {
                     distances.put(neighbor, newDistance);
                     predecessors.put(neighbor, currentNode);
@@ -88,18 +88,18 @@ public class DijkstraAlgorithm {
             }
         }
 
-        // 重建路径
+        // Reconstruct the path
         return reconstructPath(predecessors, start, end);
     }
 
     /**
-     * A* 算法 - 使用启发式函数加速寻路
-     * 启发式函数使用节点间的欧几里得距离
+     * A* algorithm - uses a heuristic to accelerate path finding.
+     * The heuristic function is the Euclidean distance between nodes.
      *
-     * @param graph 道路网络图
-     * @param start 起点节点
-     * @param end   终点节点
-     * @return 最短路径的节点列表
+     * @param graph road network graph
+     * @param start source node
+     * @param end   destination node
+     * @return list of nodes on the shortest path
      */
     public static List<Node> findShortestPathAStar(Graph graph, Node start, Node end) {
         if (start == null || end == null) {
@@ -110,14 +110,14 @@ public class DijkstraAlgorithm {
             return Collections.singletonList(start);
         }
 
-        // g(n): 从起点到节点n的实际代价
+        // g(n): actual cost from start to node n
         Map<Node, Double> gScore = new HashMap<>();
-        // f(n) = g(n) + h(n): 估计的总代价
+        // f(n) = g(n) + h(n): estimated total cost
         Map<Node, Double> fScore = new HashMap<>();
         Map<Node, Node> predecessors = new HashMap<>();
         Set<Node> visited = new HashSet<>();
 
-        // 优先队列按 f(n) 排序
+        // Priority queue sorted by f(n)
         PriorityQueue<NodeDistance> openSet = new PriorityQueue<>(
             Comparator.comparingDouble(nd -> nd.distance)
         );
@@ -164,17 +164,17 @@ public class DijkstraAlgorithm {
             }
         }
 
-        return null; // 无法到达
+        return null; // destination is unreachable
     }
 
     /**
-     * 考虑实时拥堵的最短路径 (Dijkstra with dynamic weights)
-     * 边权重 = 实际通行时间（考虑拥堵），而非静态距离
+     * Congestion-aware shortest path (Dijkstra with dynamic weights).
+     * Edge weight = actual travel time (accounting for congestion) rather than static distance.
      *
-     * @param graph 道路网络图
-     * @param start 起点节点
-     * @param end   终点节点
-     * @return 最快路径的节点列表
+     * @param graph road network graph
+     * @param start source node
+     * @param end   destination node
+     * @return list of nodes on the fastest path
      */
     public static List<Node> findFastestPath(Graph graph, Node start, Node end) {
         if (start == null || end == null) {
@@ -220,7 +220,7 @@ public class DijkstraAlgorithm {
                     continue;
                 }
 
-                // 使用实际通行时间（考虑拥堵）作为权重
+                // Use actual travel time (accounting for congestion) as edge weight
                 double newTime = travelTimes.get(currentNode) + edge.getActualTravelTime();
 
                 if (newTime < travelTimes.get(neighbor)) {
@@ -235,7 +235,7 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 计算从起点到所有其他节点的最短路径
+     * Find shortest paths from the start node to all other nodes
      */
     public static Map<Node, List<Node>> findAllShortestPaths(Graph graph, Node start) {
         Map<Node, List<Node>> allPaths = new HashMap<>();
@@ -291,12 +291,12 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 重建从起点到终点的路径
-     * 优化：使用 ArrayList + reverse 代替 LinkedList.addFirst() O(n²) -> O(n)
+     * Reconstruct the path from start to end.
+     * Optimized: uses ArrayList + reverse instead of LinkedList.addFirst() - O(n) instead of O(n^2)
      */
     private static List<Node> reconstructPath(Map<Node, Node> predecessors, Node start, Node end) {
         if (!predecessors.containsKey(end) && !start.equals(end)) {
-            return null; // 无法到达
+            return null; // destination unreachable
         }
 
         ArrayList<Node> path = new ArrayList<>();
@@ -310,18 +310,18 @@ public class DijkstraAlgorithm {
             current = predecessors.get(current);
         }
 
-        // 如果路径无效
+        // Path is invalid if it does not reach the start
         if (path.isEmpty() || !path.get(path.size() - 1).equals(start)) {
             return null;
         }
 
-        // O(n) 反转，总体 O(n) 代替原来的 O(n²)
+        // O(n) reverse; overall O(n) instead of the original O(n^2)
         Collections.reverse(path);
         return path;
     }
 
     /**
-     * A* 启发式函数 - 欧几里得距离
+     * A* heuristic function - Euclidean distance
      */
     private static double heuristic(Node a, Node b) {
         double dx = a.getX() - b.getX();
@@ -330,7 +330,7 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 计算路径的总距离
+     * Calculate the total distance of a path
      */
     public static double calculatePathDistance(List<Node> path) {
         if (path == null || path.size() < 2) {
@@ -351,7 +351,7 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 检查图的连通性（从起点能否到达终点）
+     * Check graph connectivity (whether the destination is reachable from the source)
      */
     public static boolean isReachable(Graph graph, Node start, Node end) {
         if (start == null || end == null) {
@@ -383,7 +383,7 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * 辅助类：节点和距离的配对
+     * Helper class: pairing of a node with a distance value
      */
     private static class NodeDistance {
         Node node;

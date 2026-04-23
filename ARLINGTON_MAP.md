@@ -1,164 +1,164 @@
-# 阿灵顿地区道路网络地图说明
+# Arlington Road Network Map Reference
 
-## 地图概览
+## Map Overview
 
-本系统使用的是**美国弗吉尼亚州阿灵顿郡（Arlington County, Virginia）**的真实道路网络简化模型。
+The system uses a simplified model of the real road network of **Arlington County, Virginia, USA**.
 
-阿灵顿郡位于华盛顿特区（Washington D.C.）的西侧，通过多座桥梁与首都相连，是华盛顿都会区的重要组成部分。
-
----
-
-## 包含的主要区域
-
-### 1. **Clarendon** (克拉伦登)
-- **位置**: 阿灵顿的商业中心区
-- **节点**: `1` - Clarendon Blvd & Wilson Blvd
-- **特点**: 高密度商业区，地铁橙线站点，餐饮和购物中心
-- **坐标**: (4.0, 6.0)
-
-### 2. **Courthouse** (法院区)
-- **位置**: 政府办公区
-- **节点**: `2` - Courthouse Rd & Wilson Blvd
-- **特点**: 县政府大楼、法院、地铁橙线站点
-- **坐标**: (5.5, 6.5)
-
-### 3. **Ballston** (鲍尔斯顿)
-- **位置**: 阿灵顿西北部商业区
-- **节点**: `3` - Fairfax Dr & Wilson Blvd
-- **特点**: 购物中心、地铁橙线和银线站点
-- **坐标**: (2.5, 6.5)
-
-### 4. **Rosslyn** (罗斯林)
-- **位置**: 紧邻华盛顿特区，Key Bridge东侧
-- **节点**: `4` - Fort Myer Dr & Wilson Blvd
-- **特点**: 高层建筑群、地铁蓝/橙/银线站点、通往DC的主要入口
-- **坐标**: (6.5, 6.0)
-
-### 5. **Pentagon City** (五角大楼城)
-- **位置**: 五角大楼附近的商业区
-- **节点**: `5` - Army Navy Dr & S Hayes St
-- **特点**: Fashion Centre购物中心、地铁蓝/黄线站点、里根国家机场附近
-- **坐标**: (6.0, 2.5)
-
-### 6. **Crystal City** (水晶城)
-- **位置**: 五角大楼与里根机场之间
-- **节点**: `6` - Crystal Dr & 15th St
-- **特点**: 亚马逊HQ2所在地、地铁蓝/黄线站点、高层公寓和办公楼
-- **坐标**: (7.0, 3.0)
-
-### 7. **Columbia Pike**
-- **位置**: 阿灵顿南部主干道
-- **节点**: `7`, `8` - Columbia Pike沿线路口
-- **特点**: 多元文化社区、公交快速线
-- **坐标**: (3.0, 2.0) - (4.5, 2.5)
+Arlington County is located to the west of Washington D.C., connected to the capital by multiple bridges, and is an important part of the Washington metropolitan area.
 
 ---
 
-## 主要道路
+## Key Areas Covered
 
-### 东西向主干道
+### 1. Clarendon
+- **Location**: Arlington's commercial center district
+- **Node**: `1` - Clarendon Blvd & Wilson Blvd
+- **Features**: High-density commercial zone, Orange Line Metro station, dining and shopping
+- **Coordinates**: (4.0, 6.0)
 
-#### **Wilson Boulevard** (威尔逊大道)
-- 连接：Ballston → Clarendon → Courthouse → Rosslyn
-- 距离：约4.5公里
-- 特点：阿灵顿的主要商业走廊，地铁橙线/银线平行
+### 2. Courthouse
+- **Location**: Government office district
+- **Node**: `2` - Courthouse Rd & Wilson Blvd
+- **Features**: County government buildings, courthouse, Orange Line Metro station
+- **Coordinates**: (5.5, 6.5)
 
-#### **Lee Highway** (李公路)
-- 连接：西部边界 → Ballston → Courthouse
-- 距离：约3公里
-- 特点：历史悠久的主要道路，Route 29
+### 3. Ballston
+- **Location**: Northwest Arlington commercial district
+- **Node**: `3` - Fairfax Dr & Wilson Blvd
+- **Features**: Shopping mall, Orange and Silver Line Metro stations
+- **Coordinates**: (2.5, 6.5)
 
-#### **Arlington Boulevard / Route 50** (阿灵顿大道)
-- 连接：西部边界 → Rosslyn
-- 距离：约4公里
-- 特点：主要东西向高速公路
+### 4. Rosslyn
+- **Location**: Adjacent to Washington D.C., east side of Key Bridge
+- **Node**: `4` - Fort Myer Dr & Wilson Blvd
+- **Features**: High-rise cluster, Blue / Orange / Silver Line Metro stations, main entry point to D.C.
+- **Coordinates**: (6.5, 6.0)
 
-#### **Columbia Pike**
-- 连接：南部各社区
-- 距离：约3.3公里
-- 特点：多元文化走廊，有专用公交车道
+### 5. Pentagon City
+- **Location**: Commercial district near the Pentagon
+- **Node**: `5` - Army Navy Dr & S Hayes St
+- **Features**: Fashion Centre mall, Blue / Yellow Line Metro stations, near Reagan National Airport
+- **Coordinates**: (6.0, 2.5)
 
-### 南北向连接道路
-- Clarendon ↔ Route 50: 1.8公里
-- Rosslyn ↔ Crystal City: 3.5公里（主要南北轴）
-- Crystal City ↔ Pentagon City: 0.8公里
+### 6. Crystal City
+- **Location**: Between the Pentagon and Reagan Airport
+- **Node**: `6` - Crystal Dr & 15th St
+- **Features**: Amazon HQ2 location, Blue / Yellow Line Metro stations, high-rise apartments and offices
+- **Coordinates**: (7.0, 3.0)
 
----
-
-## 边界节点（交通流起终点）
-
-### 北部边界
-- **N1**: Lee Highway North Entry (通往Falls Church方向)
-- **N2**: Washington Blvd North Entry (通往McLean方向)
-
-### 南部边界
-- **S1**: Columbia Pike South Entry (通往Fairfax County方向)
-- **S2**: Arlington Blvd South Entry (通往Alexandria方向)
-
-### 东部边界（通往华盛顿DC）
-- **E1**: Key Bridge Entry (连接Georgetown)
-- **E2**: Memorial Bridge Entry (连接林肯纪念堂)
-
-### 西部边界
-- **W1**: Route 50 West Entry (通往Fairfax方向)
-- **W2**: Lee Hwy West Entry (通往Vienna方向)
+### 7. Columbia Pike
+- **Location**: Major arterial in south Arlington
+- **Nodes**: `7`, `8` - Intersections along Columbia Pike
+- **Features**: Multicultural community, bus rapid transit corridor
+- **Coordinates**: (3.0, 2.0) - (4.5, 2.5)
 
 ---
 
-## 网络统计
+## Major Roads
 
-- **总节点数**: 20个
-  - 路口节点（有信号灯）: 12个
-  - 边界节点（交通流起终点）: 8个
+### East-West Arterials
 
-- **总道路数**: 48条（双向边）
-  - 主干道: 24条
-  - 连接道路: 12条
-  - 边界连接: 12条
+#### Wilson Boulevard
+- Connects: Ballston -> Clarendon -> Courthouse -> Rosslyn
+- Distance: approximately 4.5 km
+- Features: Arlington's main commercial corridor, parallel to the Orange / Silver Metro lines
 
-- **覆盖范围**: 约8km × 8km区域
+#### Lee Highway
+- Connects: Western boundary -> Ballston -> Courthouse
+- Distance: approximately 3 km
+- Features: Historic major road, Route 29
 
----
+#### Arlington Boulevard / Route 50
+- Connects: Western boundary -> Rosslyn
+- Distance: approximately 4 km
+- Features: Main east-west highway
 
-## 典型交通流场景
+#### Columbia Pike
+- Connects: Southern neighborhoods
+- Distance: approximately 3.3 km
+- Features: Multicultural corridor with dedicated bus lanes
 
-### 早高峰（通勤进城）
-**主要流向**: 西部/南部边界 → Rosslyn/Crystal City (进DC)
-
-示例流:
-```
-W1 (Route 50 West) → Route 50 → Rosslyn → E1 (Key Bridge)
-S1 (Columbia Pike South) → Columbia Pike → Pentagon City → Crystal City → E2 (Memorial Bridge)
-```
-
-### 晚高峰（通勤出城）
-**主要流向**: Rosslyn/Crystal City → 西部/南部边界
-
-示例流:
-```
-E1 (Key Bridge) → Rosslyn → Wilson Blvd → Ballston → W2 (Lee Hwy West)
-E2 (Memorial Bridge) → Crystal City → Pentagon City → S2 (Arlington Blvd South)
-```
-
-### 区域内交通
-**主要流向**: 各商业区之间
-
-示例流:
-```
-Ballston → Wilson Blvd → Clarendon → Courthouse
-Pentagon City → Crystal City → Rosslyn
-```
+### North-South Connectors
+- Clarendon <-> Route 50: 1.8 km
+- Rosslyn <-> Crystal City: 3.5 km (main north-south axis)
+- Crystal City <-> Pentagon City: 0.8 km
 
 ---
 
-## 实际使用建议
+## Boundary Nodes (Traffic Flow Origins and Destinations)
 
-### 创建测试流
+### Northern Boundary
+- **N1**: Lee Highway North Entry (toward Falls Church)
+- **N2**: Washington Blvd North Entry (toward McLean)
 
-使用API创建交通流来模拟真实场景：
+### Southern Boundary
+- **S1**: Columbia Pike South Entry (toward Fairfax County)
+- **S2**: Arlington Blvd South Entry (toward Alexandria)
+
+### Eastern Boundary (toward Washington D.C.)
+- **E1**: Key Bridge Entry (connecting Georgetown)
+- **E2**: Memorial Bridge Entry (connecting Lincoln Memorial)
+
+### Western Boundary
+- **W1**: Route 50 West Entry (toward Fairfax)
+- **W2**: Lee Hwy West Entry (toward Vienna)
+
+---
+
+## Network Statistics
+
+- **Total nodes**: 20
+  - Intersection nodes (with signal lights): 12
+  - Boundary nodes (traffic flow origins / destinations): 8
+
+- **Total roads**: 48 directed edges
+  - Main arterials: 24
+  - Connector roads: 12
+  - Boundary connections: 12
+
+- **Coverage area**: approximately 8 km x 8 km
+
+---
+
+## Typical Traffic Flow Scenarios
+
+### Morning Peak (Inbound Commute)
+**Main direction**: Western / Southern boundary -> Rosslyn / Crystal City (entering D.C.)
+
+Example flows:
+```
+W1 (Route 50 West) -> Route 50 -> Rosslyn -> E1 (Key Bridge)
+S1 (Columbia Pike South) -> Columbia Pike -> Pentagon City -> Crystal City -> E2 (Memorial Bridge)
+```
+
+### Evening Peak (Outbound Commute)
+**Main direction**: Rosslyn / Crystal City -> Western / Southern boundary
+
+Example flows:
+```
+E1 (Key Bridge) -> Rosslyn -> Wilson Blvd -> Ballston -> W2 (Lee Hwy West)
+E2 (Memorial Bridge) -> Crystal City -> Pentagon City -> S2 (Arlington Blvd South)
+```
+
+### Local Area Traffic
+**Main direction**: Between commercial districts
+
+Example flows:
+```
+Ballston -> Wilson Blvd -> Clarendon -> Courthouse
+Pentagon City -> Crystal City -> Rosslyn
+```
+
+---
+
+## Practical Usage Recommendations
+
+### Creating Test Flows
+
+Use the API to create traffic flows that simulate real scenarios:
 
 ```bash
-# 早高峰：从西部进城
+# Morning peak: inbound from the west
 curl -X POST http://localhost:8080/api/simulation/flows \
   -H "Content-Type: application/json" \
   -d '{
@@ -167,7 +167,7 @@ curl -X POST http://localhost:8080/api/simulation/flows \
     "numberOfCars": 150
   }'
 
-# 晚高峰：从DC出城
+# Evening peak: outbound from D.C.
 curl -X POST http://localhost:8080/api/simulation/flows \
   -H "Content-Type: application/json" \
   -d '{
@@ -176,7 +176,7 @@ curl -X POST http://localhost:8080/api/simulation/flows \
     "numberOfCars": 180
   }'
 
-# 区域内交通
+# Local area traffic
 curl -X POST http://localhost:8080/api/simulation/flows \
   -H "Content-Type: application/json" \
   -d '{
@@ -186,45 +186,45 @@ curl -X POST http://localhost:8080/api/simulation/flows \
   }'
 ```
 
-### 重点观测路口
+### Key Intersections to Watch
 
-以下路口通常是交通瓶颈：
+The following intersections are typically traffic bottlenecks:
 
-1. **Rosslyn** (`4`) - 进出DC的主要通道
-2. **Clarendon** (`1`) - 商业中心，多条道路交汇
-3. **Pentagon City** (`5`) - 连接机场和DC
-4. **Route 50 & Courthouse Rd** (`9`) - 主干道交叉
-
----
-
-## 地图参考
-
-- **真实地图**: [Google Maps - Arlington, VA](https://goo.gl/maps/arlington-va)
-- **地铁图**: [WMATA Metro Map](https://www.wmata.com/rider-guide/stations/)
-- **实时交通**: [Arlington County Traffic](https://traffic.arlingtonva.us/)
+1. **Rosslyn** (`4`) - Main gateway to and from D.C.
+2. **Clarendon** (`1`) - Commercial center where multiple roads converge
+3. **Pentagon City** (`5`) - Connects the airport and D.C.
+4. **Route 50 & Courthouse Rd** (`9`) - Major arterial intersection
 
 ---
 
-## 注意事项
+## Map References
 
-1. **简化处理**: 本模型是实际路网的简化版本，仅包含主要道路和路口
-2. **距离近似**: 道路距离基于实际距离的近似值
-3. **信号灯**: 所有路口节点都配置了基本的红绿灯控制
-4. **容量假设**: 所有道路使用相同的容量参数（50车/km）和速度限制（60km/h）
-
----
-
-## 未来扩展
-
-可以考虑添加以下真实特征：
-
-1. **地铁站**: 在Ballston, Clarendon, Courthouse, Rosslyn等站点增加公交节点
-2. **里根机场**: 添加机场交通流
-3. **五角大楼**: 添加五角大楼入口道路
-4. **GW Parkway**: 添加沿波托马克河的景观大道
-5. **I-395**: 添加州际公路395
+- **Real map**: [Google Maps - Arlington, VA](https://goo.gl/maps/arlington-va)
+- **Metro map**: [WMATA Metro Map](https://www.wmata.com/rider-guide/stations/)
+- **Live traffic**: [Arlington County Traffic](https://traffic.arlingtonva.us/)
 
 ---
 
-**最后更新**: 2026-03-12
-**作者**: Chengkun Liao, Mingjie Shen
+## Notes
+
+1. **Simplified model**: This model is a simplified version of the actual road network and includes only the major roads and intersections.
+2. **Approximate distances**: Road distances are approximate values based on real-world measurements.
+3. **Signal lights**: All intersection nodes are configured with basic traffic light control.
+4. **Capacity assumptions**: All roads use the same capacity parameters (50 vehicles/km) and speed limit (60 km/h).
+
+---
+
+## Future Extensions
+
+Consider adding the following real-world features:
+
+1. **Metro stations**: Add transit nodes at Ballston, Clarendon, Courthouse, Rosslyn, etc.
+2. **Reagan Airport**: Add airport traffic flows
+3. **The Pentagon**: Add Pentagon entrance roads
+4. **GW Parkway**: Add the George Washington Memorial Parkway along the Potomac River
+5. **I-395**: Add Interstate 395
+
+---
+
+**Last Updated**: 2026-03-12
+**Authors**: Chengkun Liao, Mingjie Shen

@@ -33,20 +33,20 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Boot WebSocket (实时数据推送) -->
+        <!-- Spring Boot WebSocket (real-time data push) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
-        <!-- Lombok (简化代码) -->
+        <!-- Lombok (boilerplate reduction) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Boot DevTools (开发时热重载) -->
+        <!-- Spring Boot DevTools (hot reload during development) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -54,14 +54,14 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Boot Test (测试支持) -->
+        <!-- Spring Boot Test (test support) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- JSON处理 -->
+        <!-- JSON processing -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>

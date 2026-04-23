@@ -1,118 +1,117 @@
-# 🚀 Traffic Signal Optimization System - Extension Roadmap
+# Traffic Signal Optimization System - Extension Roadmap
 
-## 项目概述
+## Project Overview
 
-交通信号优化系统（Traffic Signal Optimization System）是一个基于 Spring Boot 和 React 的企业级交通仿真与优化平台。本文档详细规划了系统未来的扩展方向和实施路线图。
-
----
-
-## 📋 目录
-
-1. [当前系统状态](#当前系统状态)
-2. [Phase 1: 即时增强功能](#phase-1-即时增强功能-1-3-天)
-3. [Phase 2: 中期功能](#phase-2-中期功能-1-2-周)
-4. [Phase 3: 长期扩展](#phase-3-长期扩展)
-5. [Phase 4: 性能优化](#phase-4-性能优化)
-6. [Phase 5: 用户体验增强](#phase-5-用户体验增强)
-7. [Phase 6: 高级功能](#phase-6-高级功能)
-8. [技术架构演进](#技术架构演进)
-9. [优先级矩阵](#优先级矩阵)
-10. [实施时间表](#实施时间表)
-11. [成功指标](#成功指标)
+The Traffic Signal Optimization System is an enterprise-grade traffic simulation and optimization platform built on Spring Boot and React. This document details the planned extension directions and implementation roadmap for the system.
 
 ---
 
-## 当前系统状态
+## Table of Contents
 
-### ✅ 已完成核心模块
-
-**后端 (Spring Boot 3.2.0 + Java 18)**
-- ✅ 加权有向图结构 (20 节点, 48 条边 - 阿灵顿路网)
-- ✅ Dijkstra 最短路径算法
-- ✅ 交通流仿真引擎 (离散事件仿真)
-- ✅ **动态速度调整系统** - 基于道路占用率的拥堵减速模拟
-  - 占用率 > 90%: 速度降至 30% (严重拥堵)
-  - 占用率 > 75%: 速度降至 50% (高拥堵)
-  - 占用率 > 50%: 速度降至 75% (中等拥堵)
-  - 占用率 > 25%: 速度降至 90% (轻微拥堵)
-- ✅ 效率计算公式: E = Σ(Ni × Li / ti) / Σ(Ni)
-- ✅ WebSocket 实时数据推送 (SockJS + STOMP)
-- ✅ REST API (CORS 配置完成)
-- ✅ JSON 序列化优化 (@JsonIdentityInfo 防止循环引用)
-
-**前端 (React 18 + Vite)**
-1. **MapVisualization.jsx** - SVG 地图可视化 (1600x800px)
-   - 专为桌面端优化，全宽布局
-   - 移除 mobile 响应式设计
-   - 车辆实时动画
-   - 节点/边交互
-
-2. **ControlPanel.jsx** - 仿真控制面板
-   - 启动/暂停/重置
-   - 状态指示器
-
-3. **TrafficFlowPanel.jsx** - 交通流创建面板
-   - 出发点/目的地选择
-   - 车辆数量配置
-   - 表单验证
-
-4. **PerformanceMonitor.jsx** - 性能监控面板
-   - 紧凑视图 + 扩展视图
-   - 6 项关键指标
-   - 效率趋势图表
-
-5. **SignalControlPanel.jsx** - 信号灯控制面板
-   - 3 种模式: FIXED / ADAPTIVE / INTELLIGENT
-   - 实时信号状态显示
-
-6. **NodeSearchPanel.jsx** - 节点搜索面板
-   - 实时搜索过滤
-   - 类型筛选 (路口/边界)
-   - 点击定位功能
-
-7. **StatisticsDashboard.jsx** - 统计仪表板
-   - 8 项 KPI 指标卡片
-   - 实时数据更新
-   - 性能摘要
-
-8. **DataExportPanel.jsx** - 数据导出面板
-   - 5 种数据类型导出
-   - CSV / JSON 格式支持
-   - 批量导出功能
-
-9. **TrafficHeatmapOverlay.jsx** - 交通热力图
-   - 3 种可视化模式 (拥堵/速度/流量)
-   - 5 级颜色渐变
-   - 开关控制 + 图例
-
-### 📊 当前性能指标
-
-- **前端加载时间**: ~2 秒
-- **API 响应时间**: ~100ms
-- **WebSocket 延迟**: <50ms
-- **支持车辆数**: 最多 500 辆 (未优化)
-- **帧率**: 30-60 FPS (SVG 渲染)
+1. [Current System State](#current-system-state)
+2. [Phase 1: Immediate Enhancements (1-3 days)](#phase-1-immediate-enhancements-1-3-days)
+3. [Phase 2: Mid-term Features (1-2 weeks)](#phase-2-mid-term-features-1-2-weeks)
+4. [Phase 3: Long-term Extensions](#phase-3-long-term-extensions)
+5. [Phase 4: Performance Optimization](#phase-4-performance-optimization)
+6. [Phase 5: User Experience Enhancements](#phase-5-user-experience-enhancements)
+7. [Phase 6: Advanced Features](#phase-6-advanced-features)
+8. [Technology Architecture Evolution](#technology-architecture-evolution)
+9. [Priority Matrix](#priority-matrix)
+10. [Implementation Timeline](#implementation-timeline)
+11. [Success Metrics](#success-metrics)
 
 ---
 
-## Phase 1: 即时增强功能 (1-3 天)
+## Current System State
 
-### 1.1 实时通知与警报系统 ⭐⭐⭐⭐⭐
+### Completed Core Modules
 
-**组件**: `NotificationCenter.jsx`
+**Backend (Spring Boot 3.2.0 + Java 18)**
+- Weighted directed graph structure (20 nodes, 48 edges — Arlington road network)
+- Dijkstra shortest-path algorithm
+- Traffic flow simulation engine (discrete event simulation)
+- **Dynamic speed adjustment system** — congestion slowdown based on road occupancy rate
+  - Occupancy > 90%: speed reduced to 30% (severe congestion)
+  - Occupancy > 75%: speed reduced to 50% (heavy congestion)
+  - Occupancy > 50%: speed reduced to 75% (moderate congestion)
+  - Occupancy > 25%: speed reduced to 90% (light congestion)
+- Efficiency formula: E = Sigma(Ni x Li / ti) / Sigma(Ni)
+- WebSocket real-time data push (SockJS + STOMP)
+- REST API (CORS configured)
+- JSON serialization optimization (@JsonIdentityInfo to prevent circular references)
 
-**功能描述**:
-- Toast 通知 (位于右上角)
-- 4 种通知级别:
-  - 🔵 Info: 交通流创建成功
-  - 🟡 Warning: 路段拥堵 (>70%)
-  - 🔴 Critical: 系统错误
-  - 🟢 Success: 操作成功
-- 通知历史记录 (最近 50 条)
-- 声音开关 (可选)
-- 自动消失 (3/5/10 秒可配置)
+**Frontend (React 18 + Vite)**
+1. **MapVisualization.jsx** — SVG map visualization (1600x800px)
+   - Desktop-optimized, full-width layout
+   - Real-time vehicle animation
+   - Node / edge interaction
 
-**技术实现**:
+2. **ControlPanel.jsx** — Simulation control panel
+   - Start / pause / reset
+   - Status indicator
+
+3. **TrafficFlowPanel.jsx** — Traffic flow creation panel
+   - Origin / destination selection
+   - Vehicle count configuration
+   - Form validation
+
+4. **PerformanceMonitor.jsx** — Performance monitoring panel
+   - Compact view + expanded view
+   - 6 key metrics
+   - Efficiency trend chart
+
+5. **SignalControlPanel.jsx** — Signal light control panel
+   - 3 modes: FIXED / ADAPTIVE / GREEN_WAVE
+   - Real-time signal state display
+
+6. **NodeSearchPanel.jsx** — Node search panel
+   - Real-time search filtering
+   - Type filtering (intersection / boundary)
+   - Click-to-locate
+
+7. **StatisticsDashboard.jsx** — Statistics dashboard
+   - 8 KPI metric cards
+   - Real-time data updates
+   - Performance summary
+
+8. **DataExportPanel.jsx** — Data export panel
+   - 5 data type exports
+   - CSV / JSON format support
+   - Batch export
+
+9. **TrafficHeatmapOverlay.jsx** — Traffic heatmap
+   - 3 visualization modes (congestion / speed / flow)
+   - 5-level color gradient
+   - Toggle control + legend
+
+### Current Performance Metrics
+
+- **Frontend load time**: ~2 seconds
+- **API response time**: ~100ms
+- **WebSocket latency**: < 50ms
+- **Max supported vehicles**: 500 (unoptimized)
+- **Frame rate**: 30-60 FPS (SVG rendering)
+
+---
+
+## Phase 1: Immediate Enhancements (1-3 days)
+
+### 1.1 Real-time Notification and Alert System
+
+**Component**: `NotificationCenter.jsx`
+
+**Features**:
+- Toast notifications (top-right corner)
+- 4 notification levels:
+  - Info: traffic flow created successfully
+  - Warning: segment congested (> 70%)
+  - Critical: system error
+  - Success: operation succeeded
+- Notification history (last 50 entries)
+- Sound toggle (optional)
+- Auto-dismiss (3 / 5 / 10 seconds, configurable)
+
+**Technical implementation**:
 ```javascript
 // NotificationCenter.jsx
 import { useState, useEffect } from 'react';
@@ -137,7 +136,7 @@ const NotificationCenter = () => {
 };
 ```
 
-**后端支持**:
+**Backend support**:
 ```java
 // NotificationService.java
 @Service
@@ -152,19 +151,19 @@ public class NotificationService {
 }
 ```
 
-**工作量**: 1 天
-**优先级**: P0 (最高)
-**依赖**: 无
+**Effort**: 1 day
+**Priority**: P0 (highest)
+**Dependencies**: none
 
 ---
 
-### 1.2 系统事件日志查看器 ⭐⭐⭐⭐⭐
+### 1.2 System Event Log Viewer
 
-**组件**: `EventLogPanel.jsx`
+**Component**: `EventLogPanel.jsx`
 
-**功能描述**:
-- 时间序列事件日志
-- 事件类型:
+**Features**:
+- Time-series event log
+- Event types:
   - `SIMULATION_STARTED`
   - `SIMULATION_STOPPED`
   - `FLOW_CREATED`
@@ -173,10 +172,10 @@ public class NotificationService {
   - `SIGNAL_MODE_CHANGED`
   - `CONGESTION_DETECTED`
   - `ERROR_OCCURRED`
-- 过滤器: 按类型、时间范围、关键词搜索
-- 导出日志为 JSON/TXT
+- Filters: by type, time range, keyword search
+- Export log as JSON / TXT
 
-**数据结构**:
+**Data structure**:
 ```java
 @Data
 public class SystemEvent {
@@ -189,7 +188,7 @@ public class SystemEvent {
 }
 ```
 
-**前端实现**:
+**Frontend implementation**:
 ```javascript
 const EventLogPanel = () => {
   const [events, setEvents] = useState([]);
@@ -207,23 +206,23 @@ const EventLogPanel = () => {
 };
 ```
 
-**工作量**: 1 天
-**优先级**: P0
-**依赖**: 后端事件记录服务
+**Effort**: 1 day
+**Priority**: P0
+**Dependencies**: backend event recording service
 
 ---
 
-### 1.3 历史数据对比 ⭐⭐⭐⭐
+### 1.3 Historical Data Comparison
 
-**组件**: `HistoricalComparisonPanel.jsx`
+**Component**: `HistoricalComparisonPanel.jsx`
 
-**功能描述**:
-- 对比当前仿真与历史运行结果
-- 显示改进百分比
-- 并排对比表格
-- 时间序列叠加图表
+**Features**:
+- Compare current simulation with historical run results
+- Display improvement percentages
+- Side-by-side comparison table
+- Overlaid time-series charts
 
-**API 端点**:
+**API endpoint**:
 ```
 GET /simulation/history?limit=10
 Response:
@@ -239,36 +238,36 @@ Response:
 ]
 ```
 
-**工作量**: 1.5 天
-**优先级**: P1
-**依赖**: 数据库集成
+**Effort**: 1.5 days
+**Priority**: P1
+**Dependencies**: database integration
 
 ---
 
-### 1.4 高级地图控制 ⭐⭐⭐⭐
+### 1.4 Advanced Map Controls
 
-**增强组件**: `MapVisualization.jsx`
+**Enhanced component**: `MapVisualization.jsx`
 
-**新增功能**:
-1. **迷你地图导航器** (右下角)
-   - 缩略视图显示当前可视区域
-   - 点击迷你地图快速跳转
+**New features**:
+1. **Mini-map navigator** (bottom-right corner)
+   - Thumbnail view showing the current viewport
+   - Click mini-map to jump quickly
 
-2. **缩放级别指示器**
-   - 显示当前缩放: 100% / 150% / 200%
-   - 预设缩放按钮
+2. **Zoom level indicator**
+   - Shows current zoom: 100% / 150% / 200%
+   - Preset zoom buttons
 
-3. **平移重置按钮**
-   - 一键回到中心位置
+3. **Pan reset button**
+   - One-click return to center
 
-4. **截图功能**
-   - 使用 html2canvas 库
-   - 导出当前地图视图为 PNG
+4. **Screenshot**
+   - Using html2canvas
+   - Export current map view as PNG
 
-5. **网格叠加层开关**
-   - 显示坐标网格 (每 100 单位)
+5. **Grid overlay toggle**
+   - Show coordinate grid (every 100 units)
 
-**技术实现**:
+**Technical implementation**:
 ```javascript
 import html2canvas from 'html2canvas';
 
@@ -282,33 +281,33 @@ const captureScreenshot = () => {
 };
 ```
 
-**工作量**: 2 天
-**优先级**: P1
-**依赖**: 安装 html2canvas 库
+**Effort**: 2 days
+**Priority**: P1
+**Dependencies**: install html2canvas library
 
 ---
 
-## Phase 2: 中期功能 (1-2 周)
+## Phase 2: Mid-term Features (1-2 weeks)
 
-### 2.1 路线回放与时光机 ⭐⭐⭐⭐⭐
+### 2.1 Route Replay and Time Machine
 
-**组件**: `RouteReplayPanel.jsx`
+**Component**: `RouteReplayPanel.jsx`
 
-**核心功能**:
-- **回放控制器**:
-  - 播放 / 暂停 / 停止
-  - 速度控制: 0.5x, 1x, 2x, 5x, 10x
-  - 进度条拖动 (时间轴)
+**Core features**:
+- **Playback controls**:
+  - Play / pause / stop
+  - Speed control: 0.5x, 1x, 2x, 5x, 10x
+  - Progress bar scrubbing (timeline)
 
-- **时间轴可视化**:
-  - 显示每辆车的生命周期
-  - 关键事件标记 (出发、到达、遇到红灯)
+- **Timeline visualization**:
+  - Show each vehicle's life cycle
+  - Key event markers (departure, arrival, red lights)
 
-- **热点区域识别**:
-  - 自动标记高频拥堵路段
-  - 显示平均等待时间
+- **Hotspot identification**:
+  - Automatically mark frequently congested segments
+  - Show average wait times
 
-**后端数据结构**:
+**Backend data structure**:
 ```java
 @Data
 public class VehicleSnapshot {
@@ -319,10 +318,10 @@ public class VehicleSnapshot {
     private double speed;
 }
 
-// 每 5 秒存储一次快照
+// Snapshot stored every 5 seconds
 ```
 
-**前端实现**:
+**Frontend implementation**:
 ```javascript
 const RouteReplayPanel = () => {
   const [playbackTime, setPlaybackTime] = useState(0);
@@ -341,20 +340,20 @@ const RouteReplayPanel = () => {
 };
 ```
 
-**工作量**: 5 天
-**优先级**: P1
-**依赖**: 后端快照存储服务
+**Effort**: 5 days
+**Priority**: P1
+**Dependencies**: backend snapshot storage service
 
 ---
 
-### 2.2 高级分析仪表板 ⭐⭐⭐⭐⭐
+### 2.2 Advanced Analytics Dashboard
 
-**组件**: `AdvancedAnalytics.jsx`
+**Component**: `AdvancedAnalytics.jsx`
 
-**功能模块**:
+**Feature modules**:
 
-#### 2.2.1 交通流分析
-- **Origin-Destination (O-D) 矩阵热力图**:
+#### 2.2.1 Traffic Flow Analysis
+- **Origin-Destination (O-D) matrix heatmap**:
   ```
        B1    B2    B3    B4
   B1   -     120   80    50
@@ -363,71 +362,71 @@ const RouteReplayPanel = () => {
   B4   60    85    95    -
   ```
 
-- **高峰时段识别**:
-  - 自动检测流量高峰 (>平均值 1.5 倍)
-  - 显示持续时长
+- **Peak hour identification**:
+  - Automatically detect traffic peaks (> 1.5x average)
+  - Show duration
 
-- **路线受欢迎度排行**:
-  - Top 10 最常用路线
-  - 显示使用频次
+- **Route popularity ranking**:
+  - Top 10 most-used routes
+  - Show usage frequency
 
-#### 2.2.2 信号灯性能分析
-- **绿灯时间利用率**:
+#### 2.2.2 Signal Light Performance Analysis
+- **Green-time utilization**:
   ```
-  Utilization = (实际通过车辆数 / 绿灯时间内最大通行能力) × 100%
-  ```
-
-- **队列形成模式**:
-  - 平均队列长度曲线
-  - 最大队列长度
-
-- **闯红灯统计** (模拟):
-  - 统计红灯时到达的车辆数
-
-#### 2.2.3 路网分析
-- **瓶颈识别**:
-  - 标记容量利用率 >80% 的路段
-  - 计算瓶颈影响范围
-
-- **关键路径分析**:
-  - 找出承载最多流量的路径
-  - 计算路径冗余度
-
-- **负载均衡指标**:
-  ```
-  Load Balance Score = 1 - (σ / μ)
-  其中 σ = 路段流量标准差, μ = 平均流量
+  Utilization = (actual vehicles passing / max throughput during green) x 100%
   ```
 
-**可视化**:
-- ECharts 图表库
-- 交互式图表 (缩放、筛选)
-- 实时更新
+- **Queue formation patterns**:
+  - Average queue length curve
+  - Maximum queue length
 
-**工作量**: 7 天
-**优先级**: P1
-**依赖**: ECharts 库, 后端统计 API
+- **Red-light arrival statistics** (simulated):
+  - Count vehicles arriving during red
+
+#### 2.2.3 Road Network Analysis
+- **Bottleneck identification**:
+  - Mark segments with capacity utilization > 80%
+  - Calculate bottleneck impact radius
+
+- **Critical path analysis**:
+  - Find paths carrying the most traffic
+  - Calculate path redundancy
+
+- **Load balance metric**:
+  ```
+  Load Balance Score = 1 - (sigma / mu)
+  where sigma = segment flow standard deviation, mu = average flow
+  ```
+
+**Visualization**:
+- ECharts charting library
+- Interactive charts (zoom, filter)
+- Real-time updates
+
+**Effort**: 7 days
+**Priority**: P1
+**Dependencies**: ECharts library, backend statistics API
 
 ---
 
-### 2.3 多场景对比 ⭐⭐⭐⭐
+### 2.3 Multi-scenario Comparison
 
-**组件**: `ScenarioComparisonPanel.jsx`
+**Component**: `ScenarioComparisonPanel.jsx`
 
-**功能描述**:
-- 同时运行多个仿真场景 (最多 4 个)
-- 场景配置模板:
-  - 早高峰 (7:00-9:00, 高流量, ADAPTIVE 模式)
-  - 晚高峰 (17:00-19:00, 高流量, INTELLIGENT 模式)
-  - 周末 (低流量, FIXED 模式)
-  - 事故场景 (随机路段关闭)
+**Features**:
+- Run up to 4 simulation scenarios simultaneously
+- Scenario configuration templates:
+  - Morning peak (7:00-9:00, high volume, ADAPTIVE mode)
+  - Evening peak (17:00-19:00, high volume, GREEN_WAVE mode)
+  - Weekend (low volume, FIXED mode)
+  - Incident scenario (random segment closure)
 
-- 并排对比视图:
-  - 4 个地图视图 (2×2 网格)
-  - 统一时间轴
-  - 指标对比表
+- Side-by-side comparison view:
+  - 4 map views (2x2 grid)
+  - Unified timeline
+  - Metrics comparison table
 
-**后端支持**:
+**Backend support**:
 ```java
 @Service
 public class MultiScenarioService {
@@ -449,46 +448,46 @@ public class MultiScenarioService {
 }
 ```
 
-**工作量**: 5 天
-**优先级**: P2
-**依赖**: 后端多实例支持
+**Effort**: 5 days
+**Priority**: P2
+**Dependencies**: backend multi-instance support
 
 ---
 
-### 2.4 自定义报告生成器 ⭐⭐⭐
+### 2.4 Custom Report Generator
 
-**组件**: `ReportGenerator.jsx`
+**Component**: `ReportGenerator.jsx`
 
-**报告结构**:
+**Report structure**:
 ```
-1. Executive Summary (执行摘要)
-   - 关键发现
-   - 改进建议
+1. Executive Summary
+   - Key findings
+   - Improvement recommendations
 
-2. Simulation Configuration (仿真配置)
-   - 运行时间
-   - 场景参数
+2. Simulation Configuration
+   - Run time
+   - Scenario parameters
 
-3. Performance Metrics (性能指标)
-   - 表格 + 图表
+3. Performance Metrics
+   - Tables + charts
 
-4. Detailed Analysis (详细分析)
-   - 瓶颈路段
-   - 信号灯效率
+4. Detailed Analysis
+   - Bottleneck segments
+   - Signal light efficiency
 
-5. Recommendations (优化建议)
-   - AI 生成建议
+5. Recommendations
+   - AI-generated suggestions
 
-6. Appendix (附录)
-   - 原始数据表
+6. Appendix
+   - Raw data tables
 ```
 
-**导出格式**:
-- **PDF**: 使用 jsPDF + jsPDF-AutoTable
-- **Word**: 使用 docx 库
-- **HTML**: 独立 HTML 文件
+**Export formats**:
+- **PDF**: using jsPDF + jsPDF-AutoTable
+- **Word**: using docx library
+- **HTML**: standalone HTML file
 
-**示例代码**:
+**Example code**:
 ```javascript
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -516,33 +515,33 @@ const generatePDF = (reportData) => {
 };
 ```
 
-**工作量**: 4 天
-**优先级**: P2
-**依赖**: jsPDF, docx 库
+**Effort**: 4 days
+**Priority**: P2
+**Dependencies**: jsPDF, docx libraries
 
 ---
 
-### 2.5 预测分析 ⭐⭐⭐⭐
+### 2.5 Predictive Analytics
 
-**组件**: `PredictiveDashboard.jsx`
+**Component**: `PredictiveDashboard.jsx`
 
-**预测功能**:
-1. **拥堵预测**:
-   - 未来 15/30/60 分钟拥堵预测
-   - 基于历史模式和当前趋势
+**Prediction features**:
+1. **Congestion prediction**:
+   - Congestion forecast for next 15 / 30 / 60 minutes
+   - Based on historical patterns and current trends
 
-2. **最优信号时序预测**:
-   - 建议绿灯时长调整
-   - 预期效率提升
+2. **Optimal signal timing prediction**:
+   - Suggested green-time adjustments
+   - Expected efficiency improvement
 
-3. **What-If 分析工具**:
-   - "如果增加 50 辆车会怎样?"
-   - "如果关闭 Edge-5 会怎样?"
-   - 实时模拟结果预测
+3. **What-if analysis tool**:
+   - "What if 50 more vehicles are added?"
+   - "What if Edge-5 is closed?"
+   - Real-time simulation of predicted outcomes
 
-**后端模型**:
+**Backend model**:
 ```python
-# Python 微服务 (Flask)
+# Python microservice (Flask)
 from flask import Flask, request, jsonify
 from statsmodels.tsa.arima.model import ARIMA
 import numpy as np
@@ -558,27 +557,27 @@ def predict_congestion():
     return jsonify({'predictions': forecast.tolist()})
 ```
 
-**工作量**: 6 天
-**优先级**: P1
-**依赖**: Python 微服务, ARIMA/LSTM 模型
+**Effort**: 6 days
+**Priority**: P1
+**Dependencies**: Python microservice, ARIMA / LSTM models
 
 ---
 
-## Phase 3: 长期扩展
+## Phase 3: Long-term Extensions
 
-### 3.1 多城市支持 ⭐⭐⭐
+### 3.1 Multi-city Support
 
-**架构变更**:
+**Architecture change**:
 ```
 frontend/src/data/cities/
-├── arlington_va.json
-├── boston_ma.json
-├── austin_tx.json
-└── custom/
-    └── user_city_1.json
+|-- arlington_va.json
+|-- boston_ma.json
+|-- austin_tx.json
+`-- custom/
+    `-- user_city_1.json
 ```
 
-**城市配置格式**:
+**City configuration format**:
 ```json
 {
   "cityId": "arlington_va",
@@ -599,7 +598,7 @@ frontend/src/data/cities/
 }
 ```
 
-**城市选择器**:
+**City selector**:
 ```javascript
 const CitySelector = () => {
   const [selectedCity, setSelectedCity] = useState('arlington_va');
@@ -621,38 +620,38 @@ const CitySelector = () => {
 };
 ```
 
-**自定义地图导入**:
-- 支持 GeoJSON 格式
-- 自动转换坐标系
-- 节点/边验证
+**Custom map import**:
+- GeoJSON format support
+- Automatic coordinate system conversion
+- Node / edge validation
 
-**工作量**: 8 天
-**优先级**: P3
+**Effort**: 8 days
+**Priority**: P3
 
 ---
 
-### 3.2 机器学习模型集成 ⭐⭐⭐⭐
+### 3.2 Machine Learning Model Integration
 
-**架构**:
+**Architecture**:
 ```
-┌─────────────┐
-│  React UI   │
-└──────┬──────┘
-       │
-┌──────┴────────┐
-│  Spring Boot  │
-└──────┬────────┘
-       │ HTTP
-┌──────┴────────┐
-│  ML Service   │
-│  (Python)     │
-│  Flask/FastAPI│
-└───────────────┘
++-------------+
+|  React UI   |
++------+------+
+       |
++------+--------+
+|  Spring Boot  |
++------+--------+
+       | HTTP
++------+--------+
+|  ML Service   |
+|  (Python)     |
+|  Flask/FastAPI|
++---------------+
 ```
 
-**ML 模型类型**:
+**ML model types**:
 
-#### 3.2.1 强化学习信号控制
+#### 3.2.1 Reinforcement Learning Signal Control
 ```python
 import gym
 import numpy as np
@@ -675,7 +674,7 @@ model.learn(total_timesteps=100000)
 model.save('signal_control_dqn')
 ```
 
-#### 3.2.2 拥堵预测神经网络
+#### 3.2.2 Congestion Prediction Neural Network
 ```python
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -690,7 +689,7 @@ model.compile(optimizer='adam', loss='binary_crossentropy')
 model.fit(X_train, y_train, epochs=50)
 ```
 
-#### 3.2.3 交通模式聚类
+#### 3.2.3 Traffic Pattern Clustering
 ```python
 from sklearn.cluster import KMeans
 
@@ -702,7 +701,7 @@ kmeans.fit(patterns)
 # Identify pattern: Morning Rush, Evening Rush, Weekend, etc.
 ```
 
-**前端集成**:
+**Frontend integration**:
 ```javascript
 const MLControlPanel = () => {
   const [modelType, setModelType] = useState('DQN');
@@ -733,94 +732,93 @@ const MLControlPanel = () => {
 };
 ```
 
-**工作量**: 15 天
-**优先级**: P3
+**Effort**: 15 days
+**Priority**: P3
 
 ---
 
-### 3.3 移动应用版本 ⭐⭐⭐
+### 3.3 Mobile Application Version
 
-**技术栈**: React Native + Expo
+**Technology stack**: React Native + Expo
 
-**状态**: ❌ 已取消 - 专注桌面端优化
+**Status**: Cancelled — focus on desktop optimization
 
-**原因**: 为了提供更好的桌面用户体验，系统已优化为全宽布局并移除 mobile 响应式设计
-- GPS 集成 (如果仿真真实位置)
+**Reason**: To provide a better desktop user experience the system has been optimized for full-width layout, and mobile responsive design has been removed.
 
-**目录结构**:
+**Directory structure**:
 ```
 mobile/
-├── src/
-│   ├── screens/
-│   │   ├── MapScreen.js
-│   │   ├── MetricsScreen.js
-│   │   └── SettingsScreen.js
-│   ├── components/
-│   └── services/
-├── app.json
-└── package.json
+|-- src/
+|   |-- screens/
+|   |   |-- MapScreen.js
+|   |   |-- MetricsScreen.js
+|   |   `-- SettingsScreen.js
+|   |-- components/
+|   `-- services/
+|-- app.json
+`-- package.json
 ```
 
-**工作量**: 20 天
-**优先级**: P3
+**Effort**: 20 days
+**Priority**: P3
 
 ---
 
-### 3.4 云部署 ⭐⭐⭐⭐
+### 3.4 Cloud Deployment
 
-**AWS 部署架构**:
+**AWS deployment architecture**:
 ```
-                  ┌─────────────┐
-                  │ CloudFront  │
-                  │   (CDN)     │
-                  └──────┬──────┘
-                         │
-                  ┌──────┴──────┐
-                  │  S3 Bucket  │
-                  │  (Frontend) │
-                  └─────────────┘
+                  +-------------+
+                  | CloudFront  |
+                  |   (CDN)     |
+                  +------+------+
+                         |
+                  +------+------+
+                  |  S3 Bucket  |
+                  |  (Frontend) |
+                  +-------------+
 
-┌─────────────┐          ┌─────────────┐
-│   Route 53  │──────────│     ALB     │
-│    (DNS)    │          │(Load Bal.)  │
-└─────────────┘          └──────┬──────┘
-                                │
-                    ┌───────────┴───────────┐
-                    │                       │
-             ┌──────┴──────┐        ┌──────┴──────┐
-             │  EC2 / ECS  │        │  EC2 / ECS  │
-             │  (Backend)  │        │  (Backend)  │
-             └──────┬──────┘        └──────┬──────┘
-                    │                      │
-                    └──────────┬───────────┘
-                               │
-                        ┌──────┴──────┐
-                        │  RDS (PG)   │
-                        │  + ElastiC  │
-                        │  (Redis)    │
-                        └─────────────┘
++-------------+          +-------------+
+|   Route 53  |----------+     ALB     |
+|    (DNS)    |          | (Load Bal.) |
++-------------+          +------+------+
+                                |
+                    +-----------+-----------+
+                    |                       |
+             +------+------+        +------+------+
+             |  EC2 / ECS  |        |  EC2 / ECS  |
+             |  (Backend)  |        |  (Backend)  |
+             +------+------+        +------+------+
+                    |                      |
+                    +----------+-----------+
+                               |
+                        +------+------+
+                        |  RDS (PG)   |
+                        |  + ElastiC  |
+                        |  (Redis)    |
+                        +-------------+
 ```
 
-**部署步骤**:
-1. **Dockerize 后端**:
+**Deployment steps**:
+1. **Dockerize the backend**:
 ```dockerfile
 FROM openjdk:18-jdk-slim
 COPY target/traffic-optimization-0.0.1-SNAPSHOT.jar app.jar
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 ```
 
-2. **前端构建并上传 S3**:
+2. **Build and upload frontend to S3**:
 ```bash
 npm run build
 aws s3 sync dist/ s3://traffic-optimization-frontend
 ```
 
-3. **配置 RDS 数据库**:
+3. **Configure RDS database**:
 ```sql
 CREATE DATABASE traffic_optimization;
 ```
 
-4. **设置 ElastiCache (Redis)**:
+4. **Set up ElastiCache (Redis)**:
 ```java
 @Configuration
 public class RedisConfig {
@@ -831,7 +829,7 @@ public class RedisConfig {
 }
 ```
 
-**CI/CD 管道**:
+**CI/CD pipeline**:
 ```yaml
 # .github/workflows/deploy.yml
 name: Deploy to AWS
@@ -855,24 +853,24 @@ jobs:
         run: aws ecs update-service --cluster traffic-cluster --service backend --force-new-deployment
 ```
 
-**工作量**: 10 天
-**优先级**: P3
+**Effort**: 10 days
+**Priority**: P3
 
 ---
 
-### 3.5 公共 API 与第三方集成 ⭐⭐⭐
+### 3.5 Public API and Third-party Integration
 
-**API 端点**:
+**API endpoints**:
 ```
-POST   /api/v1/auth/token                 # 获取 API Key
-GET    /api/v1/simulations                # 列出所有仿真
-POST   /api/v1/simulations                # 创建新仿真
-GET    /api/v1/simulations/{id}/metrics   # 获取指标
-POST   /api/v1/simulations/{id}/flows     # 创建交通流
-DELETE /api/v1/simulations/{id}           # 删除仿真
+POST   /api/v1/auth/token                 # Get API key
+GET    /api/v1/simulations                # List all simulations
+POST   /api/v1/simulations                # Create new simulation
+GET    /api/v1/simulations/{id}/metrics   # Get metrics
+POST   /api/v1/simulations/{id}/flows     # Create traffic flow
+DELETE /api/v1/simulations/{id}           # Delete simulation
 ```
 
-**认证**:
+**Authentication**:
 ```java
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
@@ -886,7 +884,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 }
 ```
 
-**速率限制**:
+**Rate limiting**:
 ```java
 @Component
 public class RateLimiter {
@@ -910,7 +908,7 @@ public class WebhookService {
 }
 ```
 
-**SDK 示例 (JavaScript)**:
+**SDK example (JavaScript)**:
 ```javascript
 // traffic-optimization-sdk
 class TrafficOptimizationClient {
@@ -940,18 +938,18 @@ class TrafficOptimizationClient {
 }
 ```
 
-**工作量**: 8 天
-**优先级**: P3
+**Effort**: 8 days
+**Priority**: P3
 
 ---
 
-## Phase 4: 性能优化
+## Phase 4: Performance Optimization
 
-### 4.1 前端性能优化 ⭐⭐⭐⭐
+### 4.1 Frontend Performance Optimization
 
-**优化项目**:
+**Optimization items**:
 
-#### 4.1.1 虚拟滚动
+#### 4.1.1 Virtual Scrolling
 ```javascript
 import { FixedSizeList } from 'react-window';
 
@@ -975,7 +973,7 @@ const VirtualNodeList = ({ nodes }) => {
 };
 ```
 
-#### 4.1.2 WebGL 地图渲染
+#### 4.1.2 WebGL Map Rendering
 ```javascript
 import * as PIXI from 'pixi.js';
 
@@ -1000,7 +998,7 @@ const MapVisualizationWebGL = ({ graphData }) => {
 };
 ```
 
-#### 4.1.3 代码分割
+#### 4.1.3 Code Splitting
 ```javascript
 import { lazy, Suspense } from 'react';
 
@@ -1054,19 +1052,19 @@ worker.onmessage = (e) => {
 };
 ```
 
-**目标指标**:
-- ✅ 帧率 >60 FPS
-- ✅ 初始加载 <1 秒
-- ✅ 每帧时间 <16ms
+**Target metrics**:
+- Frame rate > 60 FPS
+- Initial load < 1 second
+- Per-frame time < 16ms
 
-**工作量**: 6 天
-**优先级**: P1
+**Effort**: 6 days
+**Priority**: P1
 
 ---
 
-### 4.2 后端性能优化 ⭐⭐⭐⭐
+### 4.2 Backend Performance Optimization
 
-#### 4.2.1 Redis 缓存
+#### 4.2.1 Redis Caching
 ```java
 @Service
 public class GraphDataService {
@@ -1081,14 +1079,14 @@ public class GraphDataService {
 }
 ```
 
-#### 4.2.2 数据库索引
+#### 4.2.2 Database Indexes
 ```sql
 CREATE INDEX idx_vehicle_simulation ON vehicles(simulation_id);
 CREATE INDEX idx_metrics_timestamp ON metrics_snapshots(simulation_id, timestamp);
 CREATE INDEX idx_events_type ON system_events(event_type, timestamp);
 ```
 
-#### 4.2.3 批量更新
+#### 4.2.3 Batch Updates
 ```java
 @Service
 public class VehicleUpdateService {
@@ -1109,7 +1107,7 @@ public class VehicleUpdateService {
 }
 ```
 
-#### 4.2.4 连接池优化
+#### 4.2.4 Connection Pool Tuning
 ```yaml
 spring:
   datasource:
@@ -1120,7 +1118,7 @@ spring:
       idle-timeout: 600000
 ```
 
-#### 4.2.5 响应压缩
+#### 4.2.5 Response Compression
 ```java
 @Configuration
 public class CompressionConfig {
@@ -1134,21 +1132,21 @@ public class CompressionConfig {
 }
 ```
 
-**目标指标**:
-- ✅ API 响应 <50ms
-- ✅ 支持 10,000 车辆
-- ✅ WebSocket 延迟 <20ms
+**Target metrics**:
+- API response < 50ms
+- Support 10,000 vehicles
+- WebSocket latency < 20ms
 
-**工作量**: 5 天
-**优先级**: P1
+**Effort**: 5 days
+**Priority**: P1
 
 ---
 
-## Phase 5: 用户体验增强
+## Phase 5: User Experience Enhancements
 
-### 5.1 主题系统 ⭐⭐⭐⭐
+### 5.1 Theme System
 
-**实现**:
+**Implementation**:
 ```javascript
 // ThemeProvider.jsx
 import { createContext, useState, useEffect } from 'react';
@@ -1202,14 +1200,14 @@ export const ThemeProvider = ({ children }) => {
 };
 ```
 
-**工作量**: 2 天
-**优先级**: P0
+**Effort**: 2 days
+**Priority**: P0
 
 ---
 
-### 5.2 可定制仪表板 ⭐⭐⭐
+### 5.2 Customizable Dashboard
 
-**使用 react-grid-layout**:
+**Using react-grid-layout**:
 ```javascript
 import GridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -1237,15 +1235,15 @@ const DashboardBuilder = () => {
       draggableHandle=".drag-handle"
     >
       <div key="map" className="widget">
-        <div className="drag-handle">🗺️ Map</div>
+        <div className="drag-handle">Map</div>
         <MapVisualization />
       </div>
       <div key="metrics" className="widget">
-        <div className="drag-handle">📊 Metrics</div>
+        <div className="drag-handle">Metrics</div>
         <MetricsDisplay />
       </div>
       <div key="chart" className="widget">
-        <div className="drag-handle">📈 Chart</div>
+        <div className="drag-handle">Chart</div>
         <MetricsChart />
       </div>
     </GridLayout>
@@ -1253,14 +1251,14 @@ const DashboardBuilder = () => {
 };
 ```
 
-**工作量**: 4 天
-**优先级**: P2
+**Effort**: 4 days
+**Priority**: P2
 
 ---
 
-### 5.3 键盘快捷键 ⭐⭐⭐
+### 5.3 Keyboard Shortcuts
 
-**实现**:
+**Implementation**:
 ```javascript
 import { useEffect } from 'react';
 
@@ -1306,14 +1304,14 @@ const useKeyboardShortcuts = ({ onPlay, onPause, onReset, onExport }) => {
 };
 ```
 
-**工作量**: 1 天
-**优先级**: P2
+**Effort**: 1 day
+**Priority**: P2
 
 ---
 
-### 5.4 引导教程 ⭐⭐⭐
+### 5.4 Onboarding Tutorial
 
-**使用 react-joyride**:
+**Using react-joyride**:
 ```javascript
 import Joyride from 'react-joyride';
 
@@ -1323,23 +1321,23 @@ const OnboardingWizard = () => {
   const steps = [
     {
       target: '.control-panel',
-      content: '点击这里控制仿真的启动、暂停和重置',
+      content: 'Click here to start, pause, and reset the simulation.',
     },
     {
       target: '.traffic-flow-panel',
-      content: '在这里创建新的交通流',
+      content: 'Create new traffic flows here.',
     },
     {
       target: '.map-visualization',
-      content: '地图显示实时车辆位置和路网状态',
+      content: 'The map shows real-time vehicle positions and road network state.',
     },
     {
       target: '.heatmap-overlay',
-      content: '热力图显示道路拥堵情况',
+      content: 'The heatmap shows road congestion levels.',
     },
     {
       target: '.statistics-dashboard',
-      content: '仪表板展示关键性能指标',
+      content: 'The dashboard shows key performance metrics.',
     }
   ];
 
@@ -1375,14 +1373,14 @@ const OnboardingWizard = () => {
 };
 ```
 
-**工作量**: 2 天
-**优先级**: P2
+**Effort**: 2 days
+**Priority**: P2
 
 ---
 
-### 5.5 无障碍改进 ⭐⭐⭐⭐
+### 5.5 Accessibility Improvements
 
-**ARIA 标签**:
+**ARIA labels**:
 ```javascript
 <button
   aria-label="Start simulation"
@@ -1401,7 +1399,7 @@ const OnboardingWizard = () => {
 </div>
 ```
 
-**键盘导航**:
+**Keyboard navigation**:
 ```css
 button:focus,
 input:focus {
@@ -1416,7 +1414,7 @@ input:focus {
 }
 ```
 
-**色盲友好调色板**:
+**Color-blind-friendly palette**:
 ```javascript
 const colorBlindPalette = {
   // Okabe-Ito palette
@@ -1429,14 +1427,14 @@ const colorBlindPalette = {
 };
 ```
 
-**工作量**: 3 天
-**优先级**: P1
+**Effort**: 3 days
+**Priority**: P1
 
 ---
 
-### 5.6 国际化 (i18n) ⭐⭐⭐
+### 5.6 Internationalization (i18n)
 
-**使用 react-i18next**:
+**Using react-i18next**:
 ```javascript
 // i18n.js
 import i18n from 'i18next';
@@ -1464,25 +1462,25 @@ i18n
 export default i18n;
 ```
 
-**语言文件示例**:
+**Locale file example**:
 ```json
 // locales/zh-CN.json
 {
   "simulation": {
-    "start": "启动",
-    "pause": "暂停",
-    "reset": "重置",
-    "status": "状态"
+    "start": "Start",
+    "pause": "Pause",
+    "reset": "Reset",
+    "status": "Status"
   },
   "metrics": {
-    "efficiency": "网络效率",
-    "speed": "平均速度",
-    "congestion": "拥堵程度"
+    "efficiency": "Network Efficiency",
+    "speed": "Average Speed",
+    "congestion": "Congestion Level"
   }
 }
 ```
 
-**使用**:
+**Usage**:
 ```javascript
 import { useTranslation } from 'react-i18next';
 
@@ -1496,26 +1494,26 @@ const ControlPanel = () => {
 
       <select onChange={(e) => i18n.changeLanguage(e.target.value)}>
         <option value="en-US">English</option>
-        <option value="zh-CN">中文</option>
-        <option value="es-ES">Español</option>
+        <option value="zh-CN">Chinese</option>
+        <option value="es-ES">Spanish</option>
       </select>
     </div>
   );
 };
 ```
 
-**工作量**: 4 天
-**优先级**: P2
+**Effort**: 4 days
+**Priority**: P2
 
 ---
 
-## Phase 6: 高级功能
+## Phase 6: Advanced Features
 
-### 6.1 突发事件仿真 ⭐⭐⭐
+### 6.1 Incident Simulation
 
-**组件**: `IncidentManager.jsx`
+**Component**: `IncidentManager.jsx`
 
-**功能**:
+**Features**:
 ```javascript
 const IncidentManager = ({ edges, onIncidentCreate }) => {
   const [incidents, setIncidents] = useState([]);
@@ -1554,7 +1552,7 @@ const IncidentManager = ({ edges, onIncidentCreate }) => {
 };
 ```
 
-**后端**:
+**Backend**:
 ```java
 @Service
 public class IncidentService {
@@ -1579,16 +1577,16 @@ public class IncidentService {
 }
 ```
 
-**工作量**: 4 天
-**优先级**: P2
+**Effort**: 4 days
+**Priority**: P2
 
 ---
 
-### 6.2 天气条件 ⭐⭐⭐
+### 6.2 Weather Conditions
 
-**组件**: `WeatherSimulator.jsx`
+**Component**: `WeatherSimulator.jsx`
 
-**天气影响**:
+**Weather effects**:
 ```javascript
 const weatherEffects = {
   CLEAR: {
@@ -1627,10 +1625,10 @@ const WeatherSimulator = () => {
   return (
     <div>
       <select value={weather} onChange={(e) => applyWeather(e.target.value)}>
-        <option value="CLEAR">☀️ Clear</option>
-        <option value="RAIN">🌧️ Rain</option>
-        <option value="SNOW">❄️ Snow</option>
-        <option value="FOG">🌫️ Fog</option>
+        <option value="CLEAR">Clear</option>
+        <option value="RAIN">Rain</option>
+        <option value="SNOW">Snow</option>
+        <option value="FOG">Fog</option>
       </select>
 
       {weather !== 'CLEAR' && (
@@ -1641,91 +1639,91 @@ const WeatherSimulator = () => {
 };
 ```
 
-**工作量**: 3 天
-**优先级**: P3
+**Effort**: 3 days
+**Priority**: P3
 
 ---
 
-## 优先级矩阵
+## Priority Matrix
 
-| 优先级 | 功能 | 影响力 | 工作量 | ROI |
-|--------|------|--------|--------|-----|
-| **P0** | 通知系统 | High | Low | ⭐⭐⭐⭐⭐ |
-| **P0** | 事件日志 | High | Low | ⭐⭐⭐⭐⭐ |
-| **P0** | 主题系统 | Medium | Low | ⭐⭐⭐⭐ |
-| **P1** | 路线回放 | High | Medium | ⭐⭐⭐⭐⭐ |
-| **P1** | 高级分析 | High | High | ⭐⭐⭐⭐ |
-| **P1** | 前端性能优化 | High | Medium | ⭐⭐⭐⭐⭐ |
-| **P1** | 后端性能优化 | High | Medium | ⭐⭐⭐⭐⭐ |
-| **P1** | 无障碍改进 | Medium | Low | ⭐⭐⭐⭐ |
-| **P2** | 多场景对比 | Medium | High | ⭐⭐⭐ |
-| **P2** | 报告生成器 | Medium | Medium | ⭐⭐⭐ |
-| **P2** | 可定制仪表板 | Medium | Medium | ⭐⭐⭐ |
-| **P2** | 突发事件仿真 | Medium | Low | ⭐⭐⭐ |
-| **P3** | 机器学习集成 | Very High | Very High | ⭐⭐⭐⭐ |
-| **P3** | 多城市支持 | High | High | ⭐⭐⭐ |
-| **P3** | 云部署 | High | Medium | ⭐⭐⭐⭐ |
-| **P3** | 移动应用 | Medium | Very High | ⭐⭐ |
-| **P3** | 公共 API | Medium | Medium | ⭐⭐⭐ |
-
----
-
-## 实施时间表
-
-### 第 1-2 个月: 基础强化
-- **Week 1-2**: 通知系统 + 事件日志 + 主题系统
-- **Week 3-4**: 高级地图控制 + 历史对比
-- **Week 5-8**: 前端和后端性能优化
-
-### 第 3-4 个月: 高级功能
-- **Week 9-12**: 路线回放 + 高级分析仪表板
-- **Week 13-16**: 多场景对比 + 报告生成器
-
-### 第 5-6 个月: 智能层
-- **Week 17-20**: 预测分析 + ML 微服务
-- **Week 21-24**: 多城市支持 + API 开发
-
-### 第 7+ 个月: 规模化与打磨
-- 移动应用开发
-- 云部署
-- 协作功能
-- 高级仿真 (天气、突发事件、公交)
+| Priority | Feature | Impact | Effort | ROI |
+|----------|---------|--------|--------|-----|
+| **P0** | Notification system | High | Low | ***** |
+| **P0** | Event log | High | Low | ***** |
+| **P0** | Theme system | Medium | Low | **** |
+| **P1** | Route replay | High | Medium | ***** |
+| **P1** | Advanced analytics | High | High | **** |
+| **P1** | Frontend performance | High | Medium | ***** |
+| **P1** | Backend performance | High | Medium | ***** |
+| **P1** | Accessibility | Medium | Low | **** |
+| **P2** | Multi-scenario comparison | Medium | High | *** |
+| **P2** | Report generator | Medium | Medium | *** |
+| **P2** | Customizable dashboard | Medium | Medium | *** |
+| **P2** | Incident simulation | Medium | Low | *** |
+| **P3** | Machine learning integration | Very High | Very High | **** |
+| **P3** | Multi-city support | High | High | *** |
+| **P3** | Cloud deployment | High | Medium | **** |
+| **P3** | Mobile app | Medium | Very High | ** |
+| **P3** | Public API | Medium | Medium | *** |
 
 ---
 
-## 成功指标
+## Implementation Timeline
 
-### 系统性能
-- ✅ 支持 10,000+ 并发车辆
-- ✅ API 响应时间 <50ms
-- ✅ 前端帧时间 <16ms
-- ✅ 系统正常运行时间 99.9%
+### Months 1-2: Foundation Strengthening
+- **Week 1-2**: Notification system + event log + theme system
+- **Week 3-4**: Advanced map controls + historical comparison
+- **Week 5-8**: Frontend and backend performance optimization
 
-### 用户体验
-- ✅ 初始加载时间 <2 秒
-- ✅ WCAG 2.1 AA 无障碍合规
-- ❌ 移动响应式 (已移除 - 专注桌面端)
-- ✅ 新用户上手时间 <5 分钟
-- ✅ 桌面端全宽优化显示
+### Months 3-4: Advanced Features
+- **Week 9-12**: Route replay + advanced analytics dashboard
+- **Week 13-16**: Multi-scenario comparison + report generator
 
-### 业务价值
-- ✅ 相比基准提升效率 20%+
-- ✅ 支持 5+ 城市自定义配置
-- ✅ API 请求容量 1000+ 次/分钟
-- ✅ 每月导出 100+ 份报告
+### Months 5-6: Intelligence Layer
+- **Week 17-20**: Predictive analytics + ML microservice
+- **Week 21-24**: Multi-city support + API development
 
----
-
-## 结语
-
-这份路线图为交通信号优化系统提供了全面的扩展路径，从即时增强到长期愿景。每个阶段都建立在之前的工作之上，确保向后兼容的同时增加重要的新功能。
-
-**当前状态**: Phase 0 (核心系统) 所有组件已完成 ✅
-**推荐下一步**: 从 Phase 1 开始，优先实施通知系统和事件日志查看器
+### Month 7+: Scale and Polish
+- Mobile application development
+- Cloud deployment
+- Collaboration features
+- Advanced simulation (weather, incidents, transit)
 
 ---
 
-**文档版本**: 1.0
-**最后更新**: 2025-03-15
-**作者**: Chengkun Liao, Mingjie Shen
-**项目**: INFO6205 Final Project
+## Success Metrics
+
+### System Performance
+- Support 10,000+ concurrent vehicles
+- API response time < 50ms
+- Frontend frame time < 16ms
+- System uptime 99.9%
+
+### User Experience
+- Initial load time < 2 seconds
+- WCAG 2.1 AA accessibility compliance
+- Mobile responsive: removed — desktop focus
+- New user onboarding time < 5 minutes
+- Full-width desktop display optimization
+
+### Business Value
+- 20%+ efficiency improvement over baseline
+- Support for 5+ custom city configurations
+- API capacity 1,000+ requests/minute
+- 100+ reports exported per month
+
+---
+
+## Closing Remarks
+
+This roadmap provides a comprehensive extension path for the Traffic Signal Optimization System, from immediate enhancements to long-term vision. Each phase builds on the previous work, ensuring backward compatibility while adding significant new capabilities.
+
+**Current status**: Phase 0 (core system) — all components complete
+**Recommended next step**: Start with Phase 1, prioritizing the notification system and event log viewer
+
+---
+
+**Document version**: 1.0
+**Last updated**: 2025-03-15
+**Authors**: Chengkun Liao, Mingjie Shen
+**Project**: INFO6205 Final Project

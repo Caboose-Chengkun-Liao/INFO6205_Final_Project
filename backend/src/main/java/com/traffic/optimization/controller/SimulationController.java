@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 仿真控制器 - RESTful API
+ * Simulation controller - RESTful API
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -44,7 +44,7 @@ public class SimulationController {
     private EfficiencyCalculator efficiencyCalculator;
 
     /**
-     * 初始化仿真（使用默认地图）
+     * Initialize the simulation (using the default map)
      */
     @PostMapping("/initialize")
     public ResponseEntity<Map<String, Object>> initialize() {
@@ -54,7 +54,7 @@ public class SimulationController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "仿真已初始化");
+            response.put("message", "Simulation initialized");
             response.put("graph", getGraphInfo(graph));
 
             return ResponseEntity.ok(response);
@@ -65,59 +65,59 @@ public class SimulationController {
     }
 
     /**
-     * 开始仿真
+     * Start the simulation
      */
     @PostMapping("/start")
     public ResponseEntity<Map<String, Object>> start() {
         simulationEngine.start();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已启动",
+            "message", "Simulation started",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 暂停仿真
+     * Pause the simulation
      */
     @PostMapping("/pause")
     public ResponseEntity<Map<String, Object>> pause() {
         simulationEngine.pause();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已暂停",
+            "message", "Simulation paused",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 停止仿真
+     * Stop the simulation
      */
     @PostMapping("/stop")
     public ResponseEntity<Map<String, Object>> stop() {
         simulationEngine.stop();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已停止",
+            "message", "Simulation stopped",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 重置仿真
+     * Reset the simulation
      */
     @PostMapping("/reset")
     public ResponseEntity<Map<String, Object>> reset() {
         simulationEngine.reset();
         return ResponseEntity.ok(Map.of(
             "success", true,
-            "message", "仿真已重置",
+            "message", "Simulation reset",
             "state", simulationEngine.getState()
         ));
     }
 
     /**
-     * 执行单步
+     * Execute a single step
      */
     @PostMapping("/step")
     public ResponseEntity<Map<String, Object>> step() {
@@ -129,7 +129,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取仿真状态
+     * Get simulation status
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
@@ -149,7 +149,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取性能指标
+     * Get performance metrics
      */
     @GetMapping("/metrics")
     public ResponseEntity<EfficiencyCalculator.PerformanceMetrics> getMetrics() {
@@ -157,7 +157,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取效率趋势
+     * Get efficiency trend
      */
     @GetMapping("/efficiency/trend")
     public ResponseEntity<List<EfficiencyCalculator.EfficiencyRecord>> getEfficiencyTrend(
@@ -166,31 +166,31 @@ public class SimulationController {
     }
 
     /**
-     * 创建交通流
+     * Create a traffic flow
      */
     @PostMapping("/flows")
     public ResponseEntity<Map<String, Object>> createFlow(@RequestBody FlowManager.FlowRequest request) {
         try {
-            // 输入验证
+            // Input validation
             if (request.getEntryPoint() == null || request.getEntryPoint().isBlank()) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "error", "入口节点不能为空"));
+                    .body(Map.of("success", false, "error", "Entry node cannot be empty"));
             }
             if (request.getDestination() == null || request.getDestination().isBlank()) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "error", "目的地节点不能为空"));
+                    .body(Map.of("success", false, "error", "Destination node cannot be empty"));
             }
             if (request.getEntryPoint().equals(request.getDestination())) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "error", "入口和目的地不能相同"));
+                    .body(Map.of("success", false, "error", "Entry and destination cannot be the same"));
             }
             if (request.getNumberOfCars() <= 0) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "error", "车辆数量必须大于0"));
+                    .body(Map.of("success", false, "error", "Number of vehicles must be greater than 0"));
             }
             if (request.getNumberOfCars() > 200) {
                 return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "error", "单次车辆数量不能超过200"));
+                    .body(Map.of("success", false, "error", "Number of vehicles per request cannot exceed 200"));
             }
 
             var flow = flowManager.createFlow(
@@ -204,26 +204,26 @@ public class SimulationController {
                 "flowId", flow.getFlowId()
             ));
         } catch (Exception e) {
-            log.error("创建交通流失败: {}", e.getMessage());
+            log.error("Failed to create traffic flow: {}", e.getMessage());
             return ResponseEntity.badRequest()
                 .body(Map.of("success", false, "error", e.getMessage()));
         }
     }
 
     /**
-     * 获取道路网络图数据（用于前端地图渲染）
+     * Get road network graph data (for frontend map rendering)
      */
     @GetMapping("/graph")
     public ResponseEntity<Map<String, Object>> getGraph() {
         Graph graph = simulationEngine.getGraph();
         if (graph == null) {
             return ResponseEntity.badRequest()
-                .body(Map.of("success", false, "error", "仿真未初始化"));
+                .body(Map.of("success", false, "error", "Simulation not initialized"));
         }
 
         Map<String, Object> graphData = new HashMap<>();
 
-        // 节点数据
+        // Node data
         List<Map<String, Object>> nodes = new ArrayList<>();
         for (Node node : graph.getAllNodes()) {
             Map<String, Object> nodeData = new HashMap<>();
@@ -235,7 +235,7 @@ public class SimulationController {
             nodes.add(nodeData);
         }
 
-        // 边数据
+        // Edge data
         List<Map<String, Object>> edges = new ArrayList<>();
         for (Node node : graph.getAllNodes()) {
             for (Edge edge : node.getOutgoingEdges()) {
@@ -256,7 +256,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取车辆位置信息（用于地图可视化）
+     * Get vehicle position data (for map visualization)
      */
     @GetMapping("/vehicles")
     public ResponseEntity<List<Map<String, Object>>> getVehiclePositions() {
@@ -269,14 +269,15 @@ public class SimulationController {
                 vehicleData.put("numberOfCars", flow.getNumberOfCars());
                 vehicleData.put("state", flow.getState().toString());
 
-                // 当前位置信息
+                // Current position
                 Edge currentEdge = flow.getCurrentEdge();
                 vehicleData.put("currentEdge", currentEdge.getId());
                 vehicleData.put("from", currentEdge.getFromNode().getId());
                 vehicleData.put("to", currentEdge.getToNode().getId());
 
-                // 计算在边上的进度（0-1）
-                // getActualTravelTime() 返回分钟，乘60转为秒；timeOnCurrentEdge 已是秒
+                // Calculate progress along the edge (0-1)
+                // getActualTravelTime() returns minutes; multiply by 60 to get seconds;
+                // timeOnCurrentEdge is already in seconds
                 double travelTimeSeconds = currentEdge.getActualTravelTime() * 60;
                 double progress = travelTimeSeconds > 0
                     ? Math.min(1.0, flow.getTimeOnCurrentEdge() / travelTimeSeconds)
@@ -291,7 +292,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取所有信号灯状态
+     * Get all traffic light statuses
      */
     @GetMapping("/signals")
     public ResponseEntity<List<SignalController.SignalStatus>> getSignalStatuses() {
@@ -299,7 +300,7 @@ public class SimulationController {
     }
 
     /**
-     * 设置信号优化模式
+     * Set the signal optimization mode
      */
     @PostMapping("/signals/mode")
     public ResponseEntity<Map<String, Object>> setSignalMode(
@@ -697,7 +698,7 @@ public class SimulationController {
         graph.addBidirectionalEdge("E287","E288", n76, n36, 0.5);
         graph.addBidirectionalEdge("E289","E290", n78, n12, 0.5);
 
-        // Wilson Blvd infill — Clarendon Metro
+        // Wilson Blvd infill - Clarendon Metro
         graph.addBidirectionalEdge("E291","E292", n2, n79, 0.25);
         graph.addBidirectionalEdge("E293","E294", n79, n3, 0.5);
         graph.addBidirectionalEdge("E295","E296", n79, n77, 0.75);
@@ -734,7 +735,7 @@ public class SimulationController {
     }
 
     /**
-     * 获取图的基本信息
+     * Get basic graph information
      */
     private Map<String, Object> getGraphInfo(Graph graph) {
         Map<String, Object> info = new HashMap<>();

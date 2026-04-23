@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 交通流管理器 - 负责创建、管理和更新所有交通流
+ * Traffic flow manager - responsible for creating, managing, and updating all traffic flows
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -24,27 +24,27 @@ public class FlowManager {
     private static final Logger log = LoggerFactory.getLogger(FlowManager.class);
 
     /**
-     * 道路网络图
+     * Road network graph
      */
     private Graph graph;
 
     /**
-     * 所有活跃的交通流
+     * All active traffic flows
      */
     private Map<String, TrafficFlow> activeFlows;
 
     /**
-     * 已完成的交通流
+     * Completed traffic flows
      */
     private Map<String, TrafficFlow> completedFlows;
 
     /**
-     * 流ID生成器
+     * Flow ID generator
      */
     private AtomicInteger flowIdGenerator;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public FlowManager() {
         this.activeFlows = new ConcurrentHashMap<>();
@@ -53,52 +53,52 @@ public class FlowManager {
     }
 
     /**
-     * 设置道路网络图
+     * Set the road network graph
      */
     public void setGraph(Graph graph) {
         this.graph = graph;
     }
 
     /**
-     * 创建新的交通流
+     * Create a new traffic flow
      *
-     * @param entryPoint 入口节点ID
-     * @param destination 目的地节点ID
-     * @param numberOfCars 车辆数量
-     * @return 创建的交通流
+     * @param entryPoint   entry node ID
+     * @param destination  destination node ID
+     * @param numberOfCars number of vehicles
+     * @return the created traffic flow
      */
     public TrafficFlow createFlow(String entryPoint, String destination, int numberOfCars) {
         Node entryNode = graph.getNode(entryPoint);
         Node destNode = graph.getNode(destination);
 
         if (entryNode == null || destNode == null) {
-            throw new IllegalArgumentException("无效的入口或目的地节点");
+            throw new IllegalArgumentException("Invalid entry or destination node");
         }
 
-        // 生成流ID
+        // Generate a flow ID
         String flowId = "FLOW-" + flowIdGenerator.getAndIncrement();
 
-        // 创建交通流
+        // Create the traffic flow
         TrafficFlow flow = new TrafficFlow(flowId, entryNode, destNode, numberOfCars);
 
-        // 计算最短路径
+        // Compute the shortest path
         List<Node> path = DijkstraAlgorithm.findShortestPath(graph, entryNode, destNode);
 
         if (path == null || path.isEmpty()) {
-            throw new IllegalArgumentException("无法找到从 " + entryPoint + " 到 " + destination + " 的路径");
+            throw new IllegalArgumentException("No path found from " + entryPoint + " to " + destination);
         }
 
         flow.setPath(path);
         flow.setState(TrafficFlow.FlowState.WAITING);
 
-        // 添加到活跃流列表
+        // Add to active flows
         activeFlows.put(flowId, flow);
 
         return flow;
     }
 
     /**
-     * 批量创建交通流
+     * Create multiple traffic flows in bulk
      */
     public List<TrafficFlow> createMultipleFlows(List<FlowRequest> requests) {
         List<TrafficFlow> flows = new ArrayList<>();
@@ -112,7 +112,7 @@ public class FlowManager {
                 );
                 flows.add(flow);
             } catch (Exception e) {
-                log.warn("创建交通流失败: {}", e.getMessage());
+                log.warn("Failed to create traffic flow: {}", e.getMessage());
             }
         }
 
@@ -120,38 +120,38 @@ public class FlowManager {
     }
 
     /**
-     * 更新所有活跃的交通流（每个时间步调用）
+     * Update all active traffic flows (called every time step)
      *
-     * @param deltaTime 时间增量（秒）
+     * @param deltaTime time increment (seconds)
      */
     public void updateFlows(double deltaTime) {
         List<String> toRemove = new ArrayList<>();
 
         for (TrafficFlow flow : activeFlows.values()) {
-            // 更新旅行时间
+            // Update travel time
             flow.updateTravelTime(deltaTime);
 
-            // 检查是否完成
+            // Check whether the flow has completed
             if (flow.isCompleted()) {
-                log.debug("检测到完成的流: {}", flow.getFlowId());
+                log.debug("Completed flow detected: {}", flow.getFlowId());
                 toRemove.add(flow.getFlowId());
                 completedFlows.put(flow.getFlowId(), flow);
             }
         }
 
-        // 移除已完成的流
+        // Remove completed flows
         for (String flowId : toRemove) {
             activeFlows.remove(flowId);
         }
 
         if (!toRemove.isEmpty()) {
-            log.debug("移除已完成流: {} 个, 当前活跃={}, 已完成={}",
+            log.debug("Removed {} completed flow(s); active={}, completed={}",
                 toRemove.size(), activeFlows.size(), completedFlows.size());
         }
     }
 
     /**
-     * 获取指定节点的等待流数量
+     * Get the number of waiting (blocked) flows at a given node
      */
     public int getWaitingFlowsAtNode(Node node) {
         int count = 0;
@@ -166,7 +166,7 @@ public class FlowManager {
     }
 
     /**
-     * 获取指定边上的流
+     * Get all flows currently on a given edge
      */
     public List<TrafficFlow> getFlowsOnEdge(Edge edge) {
         List<TrafficFlow> flows = new ArrayList<>();
@@ -180,28 +180,28 @@ public class FlowManager {
     }
 
     /**
-     * 获取所有活跃流的列表
+     * Get a list of all active flows
      */
     public List<TrafficFlow> getActiveFlowsList() {
         return new ArrayList<>(activeFlows.values());
     }
 
     /**
-     * 获取所有已完成流的列表
+     * Get a list of all completed flows
      */
     public List<TrafficFlow> getCompletedFlowsList() {
         return new ArrayList<>(completedFlows.values());
     }
 
     /**
-     * 获取总流数量
+     * Get the total number of flows
      */
     public int getTotalFlowCount() {
         return activeFlows.size() + completedFlows.size();
     }
 
     /**
-     * 清空所有流
+     * Clear all flows
      */
     public void clearAllFlows() {
         activeFlows.clear();
@@ -210,15 +210,15 @@ public class FlowManager {
     }
 
     /**
-     * 打印统计信息
+     * Print statistics
      */
     public void printStatistics() {
-        log.info("交通流统计 - 活跃: {}, 已完成: {}, 总计: {}",
+        log.info("Traffic flow statistics - active: {}, completed: {}, total: {}",
             activeFlows.size(), completedFlows.size(), getTotalFlowCount());
     }
 
     /**
-     * 交通流请求类
+     * Traffic flow request class
      */
     @Getter
     public static class FlowRequest {

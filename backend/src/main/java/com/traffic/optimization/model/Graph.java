@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * 图类 - 代表整个道路网络
+ * Graph class - represents the entire road network
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -16,27 +16,27 @@ public class Graph {
 
     private static final Logger log = LoggerFactory.getLogger(Graph.class);
     /**
-     * 所有节点的映射（ID -> Node）
+     * Map of all nodes (ID -> Node)
      */
     private Map<String, Node> nodes;
 
     /**
-     * 所有边的列表
+     * List of all edges
      */
     private List<Edge> edges;
 
     /**
-     * 边界节点列表（交通流的起点和终点）
+     * List of boundary nodes (entry and exit points for traffic flows)
      */
     private List<Node> boundaryNodes;
 
     /**
-     * 路口节点列表（有信号灯的节点）
+     * List of intersection nodes (nodes with traffic lights)
      */
     private List<Node> intersectionNodes;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public Graph() {
         this.nodes = new HashMap<>();
@@ -46,7 +46,7 @@ public class Graph {
     }
 
     /**
-     * 添加节点
+     * Add a node
      */
     public void addNode(Node node) {
         nodes.put(node.getId(), node);
@@ -59,18 +59,18 @@ public class Graph {
     }
 
     /**
-     * 添加边
+     * Add an edge
      */
     public void addEdge(Edge edge) {
         edges.add(edge);
 
-        // 更新节点的出边和入边
+        // Update outgoing and incoming edge lists on the connected nodes
         edge.getFromNode().addOutgoingEdge(edge);
         edge.getToNode().addIncomingEdge(edge);
     }
 
     /**
-     * 添加双向道路
+     * Add a bidirectional road
      */
     public void addBidirectionalEdge(String id1, String id2, Node node1, Node node2, double distance) {
         Edge edge1 = new Edge(id1, node1, node2, distance);
@@ -81,21 +81,21 @@ public class Graph {
     }
 
     /**
-     * 根据ID获取节点
+     * Get a node by ID
      */
     public Node getNode(String id) {
         return nodes.get(id);
     }
 
     /**
-     * 获取所有节点
+     * Get all nodes
      */
     public Collection<Node> getAllNodes() {
         return nodes.values();
     }
 
     /**
-     * 获取节点的邻居
+     * Get the neighbors of a node
      */
     public List<Node> getNeighbors(Node node) {
         List<Node> neighbors = new ArrayList<>();
@@ -106,35 +106,35 @@ public class Graph {
     }
 
     /**
-     * 获取两个节点之间的边
+     * Get the edge between two nodes
      */
     public Edge getEdge(Node from, Node to) {
         return from.getEdgeTo(to);
     }
 
     /**
-     * 获取节点数量
+     * Get the number of nodes
      */
     public int getNodeCount() {
         return nodes.size();
     }
 
     /**
-     * 获取边数量
+     * Get the number of edges
      */
     public int getEdgeCount() {
         return edges.size();
     }
 
     /**
-     * 检查图是否为空
+     * Check whether the graph is empty
      */
     public boolean isEmpty() {
         return nodes.isEmpty();
     }
 
     /**
-     * 清空图
+     * Clear the graph
      */
     public void clear() {
         nodes.clear();
@@ -174,10 +174,10 @@ public class Graph {
     }
 
     /**
-     * 打印图的统计信息
+     * Print road network statistics
      */
     public void printStatistics() {
-        log.info("道路网络统计 - 节点: {}, 路口: {}, 边界: {}, 道路: {}",
+        log.info("Road network statistics - nodes: {}, intersections: {}, boundaries: {}, roads: {}",
             getNodeCount(), intersectionNodes.size(), boundaryNodes.size(), getEdgeCount());
     }
 

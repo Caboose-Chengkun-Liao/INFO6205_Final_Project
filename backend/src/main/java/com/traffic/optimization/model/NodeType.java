@@ -1,16 +1,16 @@
 package com.traffic.optimization.model;
 
 /**
- * 节点类型枚举
+ * Node type enumeration
  */
 public enum NodeType {
     /**
-     * 内部路口 - 有信号灯控制
+     * Internal intersection - controlled by a traffic light
      */
     INTERSECTION,
 
     /**
-     * 边界出入口 - 交通流的起点和终点
+     * Boundary entry/exit point - origin and destination for traffic flows
      */
     BOUNDARY
 }

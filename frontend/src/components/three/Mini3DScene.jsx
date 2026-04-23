@@ -56,6 +56,14 @@ const Mini3DScene = ({ index, label, color, running }) => {
     return computeCoordBounds(graphData.nodes);
   }, [graphData]);
 
+  const groundSize = useMemo(() => {
+    if (!coordBounds) return { width: 18.66, depth: 16.19 };
+    return {
+      width: coordBounds.maxX - coordBounds.minX,
+      depth: coordBounds.maxY - coordBounds.minY,
+    };
+  }, [coordBounds]);
+
   const to3D = useCallback((x, y) => {
     if (!coordBounds) return [0, 0, 0];
     const cx = (coordBounds.minX + coordBounds.maxX) / 2;
@@ -92,7 +100,12 @@ const Mini3DScene = ({ index, label, color, running }) => {
         style={{ background: '#f0f0f0' }}
       >
         <SceneLighting nightMode={false} />
-        <GroundPlane nightMode={false} />
+        <GroundPlane
+          nightMode={false}
+          width={groundSize.width}
+          depth={groundSize.depth}
+          coordBounds={coordBounds}
+        />
 
         {graphData && (
           <>

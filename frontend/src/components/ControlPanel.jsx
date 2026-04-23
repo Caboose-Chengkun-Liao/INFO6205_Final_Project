@@ -7,7 +7,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
   const [currentTime, setCurrentTime] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // 使用从WebSocket接收的数据更新本地状态
+  // Update local state with data received from WebSocket
   useEffect(() => {
     if (propSimulationState) {
       setState(propSimulationState);
@@ -35,8 +35,8 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setState('INITIALIZED');
       if (onStateChange) onStateChange('INITIALIZED');
     } catch (error) {
-      console.error('初始化失败:', error);
-      alert('初始化失败: ' + (error.response?.data?.error || error.message));
+      console.error('Initialization failed:', error);
+      alert('Initialization failed: ' + (error.response?.data?.error || error.message));
     } finally {
       setLoading(false);
     }
@@ -49,7 +49,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setState('RUNNING');
       if (onStateChange) onStateChange('RUNNING');
     } catch (error) {
-      console.error('启动失败:', error);
+      console.error('Start failed:', error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setState('PAUSED');
       if (onStateChange) onStateChange('PAUSED');
     } catch (error) {
-      console.error('暂停失败:', error);
+      console.error('Pause failed:', error);
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setCurrentTime(0);
       if (onStateChange) onStateChange('STOPPED');
     } catch (error) {
-      console.error('停止失败:', error);
+      console.error('Stop failed:', error);
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
       setCurrentTime(0);
       if (onStateChange) onStateChange('INITIALIZED');
     } catch (error) {
-      console.error('重置失败:', error);
+      console.error('Reset failed:', error);
     } finally {
       setLoading(false);
     }

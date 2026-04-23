@@ -11,8 +11,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * 并行模式对比控制器 — 同时运行 FIXED / ADAPTIVE / INTELLIGENT 三种信号模式
- * 每种模式使用独立的仿真引擎实例和图拷贝
+ * Parallel mode comparison controller - runs FIXED / ADAPTIVE / GREEN_WAVE signal modes
+ * simultaneously, each using an independent simulation engine instance and graph copy.
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -45,7 +45,7 @@ public class ComparisonController {
     private static final long TREND_RECORD_INTERVAL = 15; // record every 15 simulation seconds
 
     /**
-     * Start parallel comparison — creates 3 independent simulations with predefined traffic flows
+     * Start parallel comparison - creates 3 independent simulations with predefined traffic flows
      */
     @PostMapping("/start")
     public Map<String, Object> startComparison(@RequestBody(required = false) Map<String, Object> config) {
@@ -79,7 +79,7 @@ public class ComparisonController {
 
             // Give each mode distinct initial signal timing to differentiate from the start
             if (i == 0) {
-                // FIXED: short cycle (20s green) — represents a naive fixed timing
+                // FIXED: short cycle (20s green) - represents naive fixed timing
                 for (Node node : graphs[i].getIntersectionNodes()) {
                     if (node.getTrafficLight() != null) {
                         node.getTrafficLight().adjustGreenDuration(20);
@@ -113,7 +113,7 @@ public class ComparisonController {
         trendHistory.clear();
         lastTrendRecordTime = 0;
 
-        // Start parallel stepping — 5 steps per tick (5x speed) for faster divergence
+        // Start parallel stepping - 5 steps per tick (5x speed) for faster divergence
         running = true;
         scheduler = Executors.newScheduledThreadPool(1);
         scheduler.scheduleAtFixedRate(() -> {
@@ -328,10 +328,10 @@ public class ComparisonController {
 
     /**
      * Compute efficiency for engine[i] using both completed and active flows.
-     * Formula: E = Σ(Ni × Li / ti) / Σ(Ni)
+     * Formula: E = sum(Ni * Li / ti) / sum(Ni)
      *
      * Active flows are weighted by their completion ratio p = traveledSoFar / totalDistance.
-     * A half-done flow contributes 0.5 × Ni to the denominator instead of full Ni.
+     * A half-done flow contributes 0.5 * Ni to the denominator instead of the full Ni.
      * This prevents slow-moving active stragglers from dominating the average when a
      * mode (e.g. Green Wave) has already cleared its fast flows into `completed`.
      */
@@ -371,8 +371,8 @@ public class ComparisonController {
 
     /**
      * Actual distance traveled so far by an active flow:
-     * sum of fully traversed edges + partial progress on current edge.
-     * Blocked flows stop accumulating distance, so their ratio drops — which is exactly
+     * sum of fully traversed edges + partial progress on the current edge.
+     * Blocked flows stop accumulating distance, so their ratio drops - which is exactly
      * how signal-mode differences become visible.
      */
     private double distanceTraveledSoFar(TrafficFlow f) {
@@ -426,8 +426,8 @@ public class ComparisonController {
 
     private Graph getBaseGraph() {
         try {
-            // Use reflection-free approach: the SimulationController creates the graph
-            // We trigger initialization if needed and get the graph from the main engine
+            // Use reflection-free approach: the SimulationController creates the graph.
+            // We trigger initialization if needed and get the graph from the main engine.
             java.lang.reflect.Method m = SimulationController.class.getDeclaredMethod("createDefaultGraph");
             m.setAccessible(true);
             return (Graph) m.invoke(simulationController);
@@ -448,7 +448,7 @@ public class ComparisonController {
     private List<Map<String, Object>> getDefaultFlows() {
         List<Map<String, Object>> flows = new ArrayList<>();
         // === Heavy EW corridor traffic (morning rush, EW-dominant) ===
-        // 多重 W→E 大流量 —— 让主走廊上的协调收益显现
+        // Multiple high-volume W->E flows to make coordination benefits visible on the main corridor
         flows.add(Map.of("entryPoint", "W1", "destination", "E1", "numberOfCars", 60));
         flows.add(Map.of("entryPoint", "W1", "destination", "E2", "numberOfCars", 50));
         flows.add(Map.of("entryPoint", "W2", "destination", "E1", "numberOfCars", 55));
@@ -458,19 +458,19 @@ public class ComparisonController {
         flows.add(Map.of("entryPoint", "W3", "destination", "E3", "numberOfCars", 50));
         flows.add(Map.of("entryPoint", "W4", "destination", "E2", "numberOfCars", 35));
         flows.add(Map.of("entryPoint", "W4", "destination", "E3", "numberOfCars", 35));
-        // === NS 背景车流 ===
+        // === NS background traffic ===
         flows.add(Map.of("entryPoint", "N1", "destination", "S2", "numberOfCars", 35));
         flows.add(Map.of("entryPoint", "N2", "destination", "S1", "numberOfCars", 30));
         flows.add(Map.of("entryPoint", "N3", "destination", "S3", "numberOfCars", 25));
         flows.add(Map.of("entryPoint", "S1", "destination", "N3", "numberOfCars", 25));
         flows.add(Map.of("entryPoint", "S2", "destination", "N1", "numberOfCars", 25));
-        // === 跨向 flow(创造关键路口拥堵) ===
+        // === Cross-direction flows (create congestion at key intersections) ===
         flows.add(Map.of("entryPoint", "W2", "destination", "S2", "numberOfCars", 30));
         flows.add(Map.of("entryPoint", "N1", "destination", "E3", "numberOfCars", 25));
         flows.add(Map.of("entryPoint", "W1", "destination", "S3", "numberOfCars", 25));
         flows.add(Map.of("entryPoint", "N4", "destination", "E1", "numberOfCars", 30));
         flows.add(Map.of("entryPoint", "S5", "destination", "E2", "numberOfCars", 20));
-        // === 反向 EW(测试单向绿波对反向 flow 的影响) ===
+        // === Reverse EW flows (test how one-directional green wave affects opposing traffic) ===
         flows.add(Map.of("entryPoint", "E1", "destination", "W2", "numberOfCars", 20));
         flows.add(Map.of("entryPoint", "E2", "destination", "W3", "numberOfCars", 15));
         return flows;

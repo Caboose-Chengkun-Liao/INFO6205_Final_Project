@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * 交通流类 - 代表一组从入口到目的地的车辆
+ * Traffic flow class - represents a group of vehicles traveling from an entry point to a destination
  *
  * @author Chengkun Liao, Mingjie Shen
  */
@@ -16,78 +16,80 @@ import java.util.List;
 @JsonIgnoreProperties({"path"})
 public class TrafficFlow {
     /**
-     * 流ID（唯一标识符）
+     * Flow ID (unique identifier)
      */
     private String flowId;
 
     /**
-     * 入口节点
+     * Entry node
      */
     private Node entryPoint;
 
     /**
-     * 目的地节点
+     * Destination node
      */
     private Node destination;
 
     /**
-     * 车辆数量
+     * Number of vehicles
      */
     private int numberOfCars;
 
     /**
-     * 旅行时间计数器（秒）
+     * Travel time counter (seconds)
      */
     private double travelTimeCounter;
 
     /**
-     * 路径（节点序列）
+     * Route (sequence of nodes)
      */
     private List<Node> path;
 
     /**
-     * 当前路径索引
+     * Current index along the route
      */
     private int currentPathIndex;
 
     /**
-     * 当前所在的边
+     * The edge currently being traversed
      */
     private Edge currentEdge;
 
     /**
-     * 在当前边上已行驶的时间（秒）
+     * Time already spent on the current edge (seconds)
      */
     private double timeOnCurrentEdge;
 
     /**
-     * 流状态
+     * Flow state
      */
     private FlowState state;
 
     /**
-     * 已完成的车辆数量
+     * Number of vehicles that have completed the trip
      */
     private int completedCars;
 
     /**
-     * 总行驶距离
+     * Total distance traveled
      */
     private double totalDistance;
 
     /**
-     * 当前被阻塞的累计等待时长(秒)。BLOCKED 时累加,离开阻塞状态时重置。
-     * 用于信号优化的反饿死机制:等待越久,该 flow 对所在方向的需求权重越大。
+     * Cumulative wait time while blocked (seconds).
+     * Incremented while in BLOCKED state; reset when the flow leaves the blocked state.
+     * Used by the anti-starvation mechanism in signal optimization: longer wait times
+     * increase the demand weight for the direction this flow is waiting on.
      */
     private double currentWaitTime;
 
     /**
-     * 创建时间（模拟时间）
+     * Creation time (simulation time)
      */
     private long createdAt;
 
     /**
-     * 构造函数
+     * Constructor
      */
     public TrafficFlow(String flowId, Node entryPoint, Node destination, int numberOfCars) {
         this.flowId = flowId;
@@ -104,7 +106,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 设置路径
+     * Set the route
      */
     public void setPath(List<Node> path) {
         this.path = path;
@@ -114,7 +116,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 计算路径总距离
+     * Calculate the total route distance
      */
     private double calculatePathDistance() {
         double distance = 0;
@@ -130,7 +132,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 获取当前节点
+     * Get the current node
      */
     public Node getCurrentNode() {
         if (path == null || currentPathIndex >= path.size()) {
@@ -140,7 +142,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 获取下一个节点
+     * Get the next node
      */
     public Node getNextNode() {
         if (path == null || currentPathIndex + 1 >= path.size()) {
@@ -150,7 +152,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 移动到下一个节点
+     * Advance to the next node
      */
     public boolean moveToNextNode() {
         if (hasReachedDestination()) {
@@ -170,34 +172,34 @@ public class TrafficFlow {
     }
 
     /**
-     * 检查是否到达目的地
+     * Check whether the destination has been reached
      */
     public boolean hasReachedDestination() {
         return currentPathIndex >= path.size() - 1;
     }
 
     /**
-     * 检查是否完成
+     * Check whether the flow is complete
      */
     public boolean isCompleted() {
         return state == FlowState.COMPLETED;
     }
 
     /**
-     * 获取平均速度（km/h）
+     * Get average speed (km/h)
      */
     public double getAverageSpeed() {
         if (travelTimeCounter == 0) {
             return 0;
         }
-        // 距离 / (时间/3600)
+        // distance / (time / 3600)
         double travelTimeHours = travelTimeCounter / 3600.0;
         return totalDistance / travelTimeHours;
     }
 
     /**
-     * 获取效率指标（用于计算E值）
-     * E_i = Ni × Li / ti
+     * Get efficiency metric (used to compute the E value)
+     * E_i = Ni * Li / ti
      */
     public double getEfficiencyMetric() {
         if (travelTimeCounter == 0 || !isCompleted()) {
@@ -207,7 +209,7 @@ public class TrafficFlow {
     }
 
     /**
-     * 更新旅行时间（每秒调用）
+     * Update travel time (called every second)
      */
     public void updateTravelTime(double deltaTime) {
         if (state == FlowState.ACTIVE || state == FlowState.BLOCKED) {
@@ -222,13 +224,13 @@ public class TrafficFlow {
     }
 
     /**
-     * 流状态枚举
+     * Flow state enumeration
      */
     public enum FlowState {
-        WAITING,    // 等待进入网络
-        ACTIVE,     // 在网络中移动
-        BLOCKED,    // 被阻塞（道路满或红灯）
-        COMPLETED   // 已完成
+        WAITING,    // Waiting to enter the network
+        ACTIVE,     // Moving through the network
+        BLOCKED,    // Blocked (road full or red light)
+        COMPLETED   // Trip completed
     }
 
     @Override

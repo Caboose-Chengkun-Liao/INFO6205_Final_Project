@@ -4,14 +4,14 @@ import { Stomp } from '@stomp/stompjs';
 const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8080/ws';
 
 /**
- * WebSocket 服务 - 带指数退避自动重连
+ * WebSocket service - with exponential backoff auto-reconnect
  */
 class WebSocketService {
   constructor() {
     this.stompClient = null;
     this.connected = false;
     this.subscriptions = {};
-    this.pendingSubscriptions = []; // 重连后需要恢复的订阅
+    this.pendingSubscriptions = []; // subscriptions to restore after reconnect
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 10;
     this.reconnectTimer = null;
@@ -28,58 +28,58 @@ class WebSocketService {
 
   _doConnect() {
     try {
-      // Stomp.over 需要传入 factory 函数（不是 socket 实例）以支持自动重连
+      // Stomp.over requires a factory function (not a socket instance) to support auto-reconnect
       this.stompClient = Stomp.over(() => new SockJS(WS_URL));
 
-      // 禁用 STOMP 调试日志
+      // Disable STOMP debug logging
       this.stompClient.debug = () => {};
 
       this.stompClient.connect(
         {},
         (frame) => {
           this.connected = true;
-          this.reconnectAttempts = 0; // 重置重连计数
-          console.log('WebSocket连接成功');
+          this.reconnectAttempts = 0; // reset reconnect counter
+          console.log('WebSocket connected successfully');
 
-          // 恢复之前的订阅
+          // Restore previous subscriptions
           this._restoreSubscriptions();
 
           if (this.onConnectCallback) this.onConnectCallback();
         },
         (error) => {
           this.connected = false;
-          console.error('WebSocket连接失败:', error);
+          console.error('WebSocket connection failed:', error);
 
           if (this.onErrorCallback) this.onErrorCallback(error);
 
-          // 尝试重连
+          // Attempt reconnect
           this._scheduleReconnect();
         }
       );
 
     } catch (error) {
-      console.error('WebSocket创建失败:', error);
+      console.error('WebSocket creation failed:', error);
       this._scheduleReconnect();
     }
   }
 
   /**
-   * 指数退避重连
-   * 延迟: 1s, 2s, 4s, 8s, 16s, 30s(max)
+   * Exponential backoff reconnect
+   * Delays: 1s, 2s, 4s, 8s, 16s, 30s (max)
    */
   _scheduleReconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error(`WebSocket重连失败，已达最大尝试次数 (${this.maxReconnectAttempts})`);
+      console.error(`WebSocket reconnect failed: maximum attempts reached (${this.maxReconnectAttempts})`);
       return;
     }
 
     const delay = Math.min(
       1000 * Math.pow(2, this.reconnectAttempts),
-      30000 // 最大30秒
+      30000 // maximum 30 seconds
     );
 
     this.reconnectAttempts++;
-    console.log(`WebSocket将在 ${delay / 1000}s 后重连 (第${this.reconnectAttempts}次)...`);
+    console.log(`WebSocket reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts})...`);
 
     this.reconnectTimer = setTimeout(() => {
       this._doConnect();
@@ -87,7 +87,7 @@ class WebSocketService {
   }
 
   /**
-   * 重连后恢复所有订阅
+   * Restore all subscriptions after reconnect
    */
   _restoreSubscriptions() {
     for (const { topic, callback } of this.pendingSubscriptions) {
@@ -96,7 +96,7 @@ class WebSocketService {
   }
 
   disconnect() {
-    // 停止重连
+    // Stop reconnect timer
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -107,13 +107,13 @@ class WebSocketService {
         this.connected = false;
         this.subscriptions = {};
         this.pendingSubscriptions = [];
-        console.log('WebSocket已断开');
+        console.log('WebSocket disconnected');
       });
     }
   }
 
   subscribe(topic, callback) {
-    // 记录订阅以便重连后恢复
+    // Record the subscription so it can be restored after reconnect
     const exists = this.pendingSubscriptions.some(s => s.topic === topic);
     if (!exists) {
       this.pendingSubscriptions.push({ topic, callback });
@@ -129,7 +129,7 @@ class WebSocketService {
   }
 
   _doSubscribe(topic, callback) {
-    // 先取消旧订阅
+    // Cancel any existing subscription on this topic first
     if (this.subscriptions[topic]) {
       try {
         this.subscriptions[topic].unsubscribe();
@@ -143,7 +143,7 @@ class WebSocketService {
         const data = JSON.parse(message.body);
         callback(data);
       } catch (e) {
-        console.error('WebSocket消息解析失败:', e);
+        console.error('WebSocket message parse failed:', e);
       }
     });
 

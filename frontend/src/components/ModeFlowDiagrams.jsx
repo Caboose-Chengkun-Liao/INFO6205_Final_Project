@@ -616,7 +616,7 @@ const MODES = [
         title: 'Match Mode',
         subtitle: 'case FIXED_TIME matched',
         detail: 'The switch statement routes to the FIXED_TIME branch. This mode has a dedicated case but no logic.',
-        code: 'case FIXED_TIME:\n    // 固定时长模式，不做优化\n    break;',
+        code: 'case FIXED_TIME:\n    // Fixed timing mode — no optimization\n    break;',
         highlight: 'No-op branch',
         visual: (color) => <BranchView selectedIdx={0} color={color} />,
       },

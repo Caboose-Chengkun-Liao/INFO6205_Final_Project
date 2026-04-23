@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * SignalController 单元测试 - 验证三种优化模式
+ * SignalController unit tests - verifies the three optimization modes
  */
 class SignalControllerTest {
 
@@ -39,7 +39,7 @@ class SignalControllerTest {
 
     @Test
     void testUpdateSignals() {
-        // 信号灯初始状态
+        // Initial traffic light state
         Node intersection = graph.getNode("1");
         TrafficLight light = intersection.getTrafficLight();
         assertNotNull(light);
@@ -58,7 +58,7 @@ class SignalControllerTest {
 
         controller.optimizeSignals();
 
-        // 固定模式下绿灯时长不应变化
+        // Green duration should not change in fixed timing mode
         assertEquals(greenBefore, intersection.getTrafficLight().getGreenDuration());
     }
 
@@ -66,16 +66,16 @@ class SignalControllerTest {
     void testWebsterMode_adjustsGreenTime() {
         controller.setOptimizationMode(SignalController.OptimizationMode.TRAFFIC_ADAPTIVE);
 
-        // 创建一些车流来产生交通量
+        // Create some traffic flows to generate demand
         flowManager.createFlow("A", "B", 30);
 
         controller.optimizeSignals();
 
-        // Webster 模式应该调整绿灯时长
+        // Webster mode should adjust green duration
         Node intersection = graph.getNode("1");
         int greenDuration = intersection.getTrafficLight().getGreenDuration();
         assertTrue(greenDuration >= 10 && greenDuration <= 90,
-            "Webster优化后绿灯时长应在10-90秒范围内: " + greenDuration);
+            "Green duration after Webster optimization should be in the 10-90s range: " + greenDuration);
     }
 
     @Test
@@ -83,16 +83,16 @@ class SignalControllerTest {
         controller.setOptimizationMode(SignalController.OptimizationMode.GREEN_WAVE);
         controller.optimizeSignals();
 
-        // 绿波协调后所有路口应该共享相同的 cycle 长度
+        // After green wave coordination all intersections should share the same cycle length
         int firstCycle = -1;
         for (Node node : graph.getIntersectionNodes()) {
             TrafficLight light = node.getTrafficLight();
             if (light == null) continue;
             if (firstCycle == -1) firstCycle = light.getCycleLength();
             else assertEquals(firstCycle, light.getCycleLength(),
-                "绿波模式下所有路口 cycle 应一致");
+                "All intersections should have the same cycle length in green wave mode");
         }
-        assertTrue(firstCycle > 0, "Cycle 长度应为正数");
+        assertTrue(firstCycle > 0, "Cycle length should be positive");
     }
 
     @Test
@@ -116,7 +116,7 @@ class SignalControllerTest {
 
     @Test
     void testSetSignalTiming_invalidNode() {
-        // 不应该抛异常
+        // Should not throw an exception for an invalid node ID
         controller.setSignalTiming("NONEXISTENT", 30);
     }
 
@@ -144,21 +144,23 @@ class SignalControllerTest {
     void testGreenWave_initializesOnlyOnce() {
         controller.setOptimizationMode(SignalController.OptimizationMode.GREEN_WAVE);
 
-        // 首次 optimize 会设置 35/15 并对齐相位
+        // The first optimize call sets 35/15 timing and aligns phases
         controller.optimizeSignals();
         TrafficLight light = graph.getNode("1").getTrafficLight();
         int remainingAfterInit = light.getRemainingTime();
         int greenEW = light.getGreenDurationEW();
         int greenNS = light.getGreenDurationNS();
 
-        // 二次 optimize 不应改动相位/绿灯(初始化标记生效,避免打断绿波)
-        controller.updateSignals(); // 模拟 1 秒流逝
+        // A second optimize call should not change the phase or green durations
+        // (the initialization flag prevents re-synchronization that would disrupt the wave)
+        controller.updateSignals(); // simulate 1 second elapsing
         controller.optimizeSignals();
-        assertEquals(greenEW, light.getGreenDurationEW(), "EW green 不应被二次 optimize 修改");
-        assertEquals(greenNS, light.getGreenDurationNS(), "NS green 不应被二次 optimize 修改");
-        // remainingTime 仅受 updateSignals 影响(每调 updateSignals 减 1),optimizeSignals 不应跳相位
+        assertEquals(greenEW, light.getGreenDurationEW(), "EW green should not be modified by a second optimizeSignals call");
+        assertEquals(greenNS, light.getGreenDurationNS(), "NS green should not be modified by a second optimizeSignals call");
+        // remainingTime is only affected by updateSignals (decrements by 1 each call);
+        // optimizeSignals should not jump the phase
         assertEquals(remainingAfterInit - 1, light.getRemainingTime(),
-            "optimizeSignals 不应打断正在倒计时的相位");
+            "optimizeSignals should not interrupt an active countdown");
     }
 
     @Test
@@ -166,26 +168,27 @@ class SignalControllerTest {
         controller.setOptimizationMode(SignalController.OptimizationMode.GREEN_WAVE);
         controller.optimizeSignals();
 
-        // 绿波使用与 FIXED 相同的 20/20 配时(cycle=50),唯一区别是相位 offset
+        // Green Wave uses the same 20/20 timing as FIXED (cycle=50);
+        // the only difference is the phase offset
         for (Node node : graph.getIntersectionNodes()) {
             TrafficLight light = node.getTrafficLight();
             if (light == null) continue;
-            assertEquals(20, light.getGreenDurationEW(), "EW 绿应为 20s");
-            assertEquals(20, light.getGreenDurationNS(), "NS 绿应为 20s");
-            assertEquals(50, light.getCycleLength(), "cycle 应为 50s 以便与 FIXED 对照");
+            assertEquals(20, light.getGreenDurationEW(), "EW green should be 20s");
+            assertEquals(20, light.getGreenDurationNS(), "NS green should be 20s");
+            assertEquals(50, light.getCycleLength(), "Cycle should be 50s to allow comparison with FIXED");
         }
     }
 
     @Test
     void testSynchronizeSignals() {
-        // 先让一些信号灯变化
+        // Allow some signal updates to change state
         for (int i = 0; i < 20; i++) {
             controller.updateSignals();
         }
 
         controller.synchronizeSignals();
 
-        // 同步后所有信号灯应该是东西向绿灯
+        // After synchronization all signals should be in EW green
         for (Node node : graph.getIntersectionNodes()) {
             TrafficLight light = node.getTrafficLight();
             assertEquals(TrafficLight.SignalDirection.EAST_WEST, light.getCurrentDirection());

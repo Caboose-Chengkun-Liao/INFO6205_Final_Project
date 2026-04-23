@@ -9,7 +9,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * EfficiencyCalculator 单元测试
+ * EfficiencyCalculator unit tests
  */
 class EfficiencyCalculatorTest {
 
@@ -31,15 +31,15 @@ class EfficiencyCalculatorTest {
         Node a = new Node("A", "A", NodeType.BOUNDARY, 0, 0);
         Node b = new Node("B", "B", NodeType.BOUNDARY, 1, 0);
 
-        // 创建边以确保 path 有距离
-        Edge edge = new Edge("E1", a, b, 5.0); // 5km 道路
+        // Create an edge so that the path has a real distance
+        Edge edge = new Edge("E1", a, b, 5.0); // 5 km road
         a.addOutgoingEdge(edge);
         b.addIncomingEdge(edge);
 
         TrafficFlow flow = new TrafficFlow("F1", a, b, 10);
-        flow.setPath(List.of(a, b)); // totalDistance = 5.0km
+        flow.setPath(List.of(a, b)); // totalDistance = 5.0 km
 
-        // 需要 ACTIVE 状态才能累积时间
+        // ACTIVE state is required for travel time to accumulate
         flow.setState(TrafficFlow.FlowState.ACTIVE);
         for (int i = 0; i < 3600; i++) {
             flow.updateTravelTime(1.0);
@@ -47,7 +47,7 @@ class EfficiencyCalculatorTest {
         flow.setState(TrafficFlow.FlowState.COMPLETED);
 
         double efficiency = calculator.calculateEfficiency(List.of(flow));
-        assertTrue(efficiency > 0, "效率应大于0, totalDistance=" + flow.getTotalDistance()
+        assertTrue(efficiency > 0, "Efficiency should be > 0; totalDistance=" + flow.getTotalDistance()
             + ", travelTime=" + flow.getTravelTimeCounter());
     }
 
@@ -64,9 +64,9 @@ class EfficiencyCalculatorTest {
         flow2.setState(TrafficFlow.FlowState.ACTIVE);
         for (int i = 0; i < 200; i++) flow2.updateTravelTime(1.0);
 
-        // 平均旅行时间 = (100 + 200) / 2 = 150（按 flow 数量，不是车辆数量）
+        // Average travel time = (100 + 200) / 2 = 150 (per flow, not per vehicle)
         double avg = calculator.calculateAverageTravelTime(List.of(flow1, flow2));
-        assertEquals(150.0, avg, 0.01, "平均旅行时间应为 (100+200)/2=150，不应乘车辆数");
+        assertEquals(150.0, avg, 0.01, "Average travel time should be (100+200)/2=150, not multiplied by vehicle count");
     }
 
     @Test
@@ -78,7 +78,7 @@ class EfficiencyCalculatorTest {
         flow.setPath(List.of(a, b)); // totalDistance calculated from path
         flow.setState(TrafficFlow.FlowState.ACTIVE);
 
-        // 1小时旅行
+        // Simulate 1 hour of travel
         for (int i = 0; i < 3600; i++) {
             flow.updateTravelTime(1.0);
         }
@@ -116,7 +116,7 @@ class EfficiencyCalculatorTest {
 
     @Test
     void testRecordEfficiency_maxSize() {
-        // 超过1000条记录时应该自动清理旧数据
+        // Old records should be pruned automatically when the history exceeds 1000 entries
         for (int i = 0; i < 1050; i++) {
             calculator.recordEfficiency(i, i);
         }
@@ -142,14 +142,14 @@ class EfficiencyCalculatorTest {
 
     // ==================== Network-level metrics (new) ====================
 
-    /** 构造一个 graph，edges 占用率分别为 ratios 数组指定的值 */
+    /** Build a graph whose edges have the specified occupancy rates */
     private Graph graphWithOccupancies(double... ratios) {
         Graph g = new Graph();
         for (int i = 0; i < ratios.length; i++) {
             Node u = new Node("U" + i, "U" + i, NodeType.INTERSECTION, i, 0);
             Node v = new Node("V" + i, "V" + i, NodeType.INTERSECTION, i + 1, 0);
             g.addNode(u); g.addNode(v);
-            // capacity = 1km × 50/km = 50
+            // capacity = 1km * 50/km = 50
             Edge e = new Edge("E" + i, u, v, 1.0);
             e.setCurrentVehicleCount((int) Math.round(ratios[i] * 50));
             g.addEdge(e);
@@ -173,18 +173,18 @@ class EfficiencyCalculatorTest {
 
     @Test
     void testCalculateCongestedEdgeRatio() {
-        // 占用率 0.1 / 0.3 / 0.7  → threshold=0.5 时只有 1 条算拥堵 → 1/3
+        // Occupancies: 0.1 / 0.3 / 0.7 -> with threshold=0.5 only 1 edge is congested -> 1/3
         Graph g = graphWithOccupancies(0.1, 0.3, 0.7);
         assertEquals(1.0 / 3, calculator.calculateCongestedEdgeRatio(g, 0.5), 0.01);
 
-        // threshold=0.2 时有 2 条算拥堵 → 2/3
+        // With threshold=0.2, 2 edges are congested -> 2/3
         assertEquals(2.0 / 3, calculator.calculateCongestedEdgeRatio(g, 0.2), 0.01);
     }
 
     @Test
     void testCalculateAverageQueueLength_empty() {
         Graph g = graphWithOccupancies(0.5, 0.5);
-        // queue 里没有被 offer 任何 flow，默认 0
+        // No flows were added to the queues, so queue length should be 0
         assertEquals(0.0, calculator.calculateAverageQueueLength(g), 0.01);
     }
 
@@ -216,12 +216,12 @@ class EfficiencyCalculatorTest {
 
     @Test
     void testCalculateSpeedReductionRatio() {
-        // 低占用率(0.1)下，实际速度接近限速，比值接近 1.0
+        // At low occupancy (0.1), actual speed is close to the speed limit, so the ratio approaches 1.0
         Graph g = graphWithOccupancies(0.1, 0.1);
         double ratio = calculator.calculateSpeedReductionRatio(g);
         assertTrue(ratio > 0.9 && ratio <= 1.0, "Low-occupancy speed ratio should be > 0.9, got " + ratio);
 
-        // 高占用率(1.0)下，速度大幅降低
+        // At high occupancy (1.0), speed is greatly reduced
         Graph g2 = graphWithOccupancies(1.0, 1.0);
         double ratio2 = calculator.calculateSpeedReductionRatio(g2);
         assertTrue(ratio2 < ratio, "High occupancy should reduce speed ratio");

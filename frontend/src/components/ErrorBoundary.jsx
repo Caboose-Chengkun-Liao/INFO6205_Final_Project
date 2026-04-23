@@ -1,7 +1,7 @@
 import React from 'react';
 
 /**
- * Error Boundary - 捕获子组件错误，防止整个应用崩溃
+ * Error Boundary - catches errors in child components to prevent the entire app from crashing
  */
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -35,10 +35,10 @@ class ErrorBoundary extends React.Component {
         }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
           <h3 style={{ color: '#c53030', margin: '0 0 8px' }}>
-            {this.props.title || '组件加载出错'}
+            {this.props.title || 'Component failed to load'}
           </h3>
           <p style={{ color: '#742a2a', fontSize: '14px', margin: '0 0 16px' }}>
-            {this.state.error?.message || '发生了未知错误'}
+            {this.state.error?.message || 'An unknown error occurred'}
           </p>
           <button
             onClick={this.handleRetry}
@@ -52,7 +52,7 @@ class ErrorBoundary extends React.Component {
               fontSize: '14px',
             }}
           >
-            重试
+            Retry
           </button>
         </div>
       );

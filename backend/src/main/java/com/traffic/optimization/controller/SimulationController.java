@@ -466,15 +466,11 @@ public class SimulationController {
         Node n44 = new Node("44", "Rosslyn Metro & N Moore St",    NodeType.INTERSECTION, 4.22, 4.91);
         Node n45 = new Node("45", "Key Blvd & N Quinn St",         NodeType.INTERSECTION, 5.02, 4.06);
         Node n46 = new Node("46", "N Ft Myer Dr & Langston Blvd",  NodeType.INTERSECTION, 3.7, 4.63);
-        // Pentagon area
-        Node n47 = new Node("47", "Pentagon Rd & Army Navy Dr",    NodeType.INTERSECTION, 7.52, -2.9);
-        Node n48 = new Node("48", "S Fern St & 12th St S",         NodeType.INTERSECTION, 7.98, -4.03);
-        Node n49 = new Node("49", "Pentagon City Dr & S Hayes St", NodeType.INTERSECTION, 7.07, -5.17);
-        Node n50 = new Node("50", "S Eads St & Army Navy Dr",      NodeType.INTERSECTION, 8.66, -2.9);
-        Node n51 = new Node("51", "Pentagon Transit Center",       NodeType.INTERSECTION, 8.53, -2.47);
-        Node n52 = new Node("52", "S Clark St & 15th St S",        NodeType.INTERSECTION, 8.43, -5.74);
-        // n53 removed (was dead-end Pentagon Reservation Gate)
-        Node n54 = new Node("54", "Fashion Centre Pentagon City",  NodeType.INTERSECTION, 8.32, -4.6);
+        // Pentagon / Crystal City (simplified: 5 nodes instead of 14)
+        // n25 is the main entry (Army Navy Dr), n47 handles GW Pkwy exits,
+        // n33 is Pentagon City hub, n31/n32 are Crystal City.
+        // n48,n49,n50,n51,n52,n54,n80,n82 removed — too many nodes in small area.
+        Node n47 = new Node("47", "Pentagon North / GW Pkwy",      NodeType.INTERSECTION, 7.52, -2.9);
         // Ballston-Virginia Square
         Node n55 = new Node("55", "N Randolph St & Wilson Blvd",   NodeType.INTERSECTION, -4.54, 0.8);
         Node n56 = new Node("56", "Ballston Quarter & N Glebe Rd", NodeType.INTERSECTION, -4.08, 1.36);
@@ -501,19 +497,17 @@ public class SimulationController {
         // n75 removed (was Henderson Rd & S Courthouse — isolated after degree fixes)
         Node n76 = new Node("76", "Pershing Dr & N Glebe Rd",     NodeType.INTERSECTION, -3.08, 0.17);
         // n77, n78, n79 removed (Washington Blvd/Clarendon infill — caused degree-5 nodes)
-        Node n80 = new Node("80", "Pentagon Row & S Hayes St",     NodeType.INTERSECTION, 6.61, -4.17);
-        // n81 removed (was Columbia Pike infill — caused n28 deg=5)
-        Node n82 = new Node("82", "12th St S & S Hayes St",        NodeType.INTERSECTION, 7.07, -4.88);
+        // n80, n82 removed (Pentagon Row / 12th St S — part of Pentagon simplification)
 
-        // n37,n53,n75,n77,n78,n79,n81 removed (degree-fix)
+        // Removed: n37,n48,n49,n50,n51,n52,n53,n54,n75,n77,n78,n79,n80,n81,n82
         Node[] intersections = {n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12,n13,n14,
             n15,n16,n17,n18,n19,n20,n21,n22,n23,n24,n25,n26,n27,n28,n29,n30,
             n31,n32,n33,n34,n35,n36,n38,
             n39,n40,n41,n42,n43,n44,n45,n46,
-            n47,n48,n49,n50,n51,n52,n54,
+            n47,
             n55,n56,n57,n58,n59,n60,n61,
             n62,n63,n64,n65,n66,n67,
-            n68,n69,n70,n71,n72,n73,n74,n76,n80,n82};
+            n68,n69,n70,n71,n72,n73,n74,n76};
         for (Node n : intersections) graph.addNode(n);
 
         // ==================== Edges (73 bidirectional pairs = 146 directed) ====================
@@ -594,11 +588,7 @@ public class SimulationController {
         graph.addBidirectionalEdge("E103","E104", n35, n26, 0.5);
 
         // Crystal City
-        graph.addBidirectionalEdge("E105","E106", n38, n31, 2.0);
         graph.addBidirectionalEdge("E107","E108", n31, n32, 0.75);
-        // n34-n10 diagonal removed (n10 deg fix); n36-n37, n37-n12 removed (n37 deleted)
-        // n5-n38 removed (n5 deg fix); n25-n31 removed (n25 deg fix)
-        // n30-n33 long cross-link removed; n35-n21 removed (n21 deg fix)
 
         // ==================== EXPANSION: New Edges ====================
 
@@ -616,21 +606,11 @@ public class SimulationController {
         graph.addBidirectionalEdge("E169","E170", n41, n40, 0.6);
         graph.addBidirectionalEdge("EX1","EX2",  n43, n45, 0.6); // N Quinn St connects Lee Hwy & Key Blvd nodes
 
-        // Pentagon area (n80-n25 removed — n25 deg fix; n50-n53 removed — n53 deleted)
-        graph.addBidirectionalEdge("E171","E172", n25, n47, 0.5);
-        graph.addBidirectionalEdge("E173","E174", n47, n50, 0.5);
-        graph.addBidirectionalEdge("E175","E176", n50, n51, 0.5);
-        graph.addBidirectionalEdge("E177","E178", n51, bE5, 0.75);
-        graph.addBidirectionalEdge("EX3","EX4",   bE2, n51, 1.0); // Memorial Bridge → Pentagon Transit
-        graph.addBidirectionalEdge("E179","E180", n47, n48, 0.5);
-        graph.addBidirectionalEdge("E181","E182", n48, n52, 0.5);
-        graph.addBidirectionalEdge("E183","E184", n52, n32, 0.5);
-        graph.addBidirectionalEdge("E185","E186", n33, n49, 0.5);
-        graph.addBidirectionalEdge("E187","E188", n49, n82, 0.5);
-        graph.addBidirectionalEdge("E189","E190", n82, n48, 0.5);
-        graph.addBidirectionalEdge("E193","E194", n31, n54, 0.5);
-        graph.addBidirectionalEdge("E195","E196", n54, n80, 0.5);
-        graph.addBidirectionalEdge("E301","E302", n33, n80, 0.5);
+        // Pentagon / Crystal City (simplified 5-node cluster)
+        graph.addBidirectionalEdge("E171","E172", n25, n47, 1.0);  // Army Navy Dr → GW Pkwy junction
+        graph.addBidirectionalEdge("EX3","EX4",   n47, bE2, 1.2);  // Memorial Bridge
+        graph.addBidirectionalEdge("EX5","EX6",   n47, bE5, 0.8);  // Arlington Ridge Rd
+        graph.addBidirectionalEdge("EX7","EX8",   n33, n31, 1.5);  // Pentagon City → Crystal City
 
         // Ballston-Virginia Square (n56-n6 removed — n6 deg fix; n58-n10 kept for Virginia Square connectivity)
         graph.addBidirectionalEdge("E199","E200", n55, n1, 0.75);
@@ -690,7 +670,7 @@ public class SimulationController {
         graph.addBidirectionalEdge("E131","E132", bS2, n33, 0.5);
         graph.addBidirectionalEdge("E133","E134", bS3, n32, 0.5);
         graph.addBidirectionalEdge("E135","E136", bE1, n5, 1.5);
-        // bE2 now connects to n51 (Pentagon Transit) — added above as EX3-EX4
+        // bE2 connects to n47 (Pentagon GW Pkwy junction) — added above as EX3-EX4
         graph.addBidirectionalEdge("E139","E140", bE3, n31, 0.9);
         graph.addBidirectionalEdge("E141","E142", bW1, n15, 0.75);
         graph.addBidirectionalEdge("E143","E144", bW2, n34, 0.75);

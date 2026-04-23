@@ -211,7 +211,6 @@ const TrafficScene3D = ({ signals = [] }) => {
           maxPolarAngle={Math.PI / 2.1}
           minDistance={3}
           maxDistance={35}
-          enableZoom={false}
         />
       </Canvas>
 

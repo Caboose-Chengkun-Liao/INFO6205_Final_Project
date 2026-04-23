@@ -146,7 +146,6 @@ const Mini3DScene = ({ index, label, color, running }) => {
           maxPolarAngle={Math.PI / 2.1}
           minDistance={3}
           maxDistance={30}
-          enableZoom={false}
         />
       </Canvas>
     </div>

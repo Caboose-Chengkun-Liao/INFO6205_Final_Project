@@ -440,7 +440,7 @@ public class SimulationController {
         Node n22 = new Node("22", "S Quincy St & 7th St S",        NodeType.INTERSECTION, -1.12, -3.24);
         Node n23 = new Node("23", "S Highland St & Columbia Pike",  NodeType.INTERSECTION, 0.47, -4.32);
         Node n24 = new Node("24", "S Courthouse Rd & Columbia Pike",NodeType.INTERSECTION, 1.7, -4.03);
-        Node n25 = new Node("25", "Army Navy Dr & S Hayes St",     NodeType.INTERSECTION, 6.16, -3.46);
+        Node n25 = new Node("25", "S Lynn St & Pentagon Approach",  NodeType.INTERSECTION, 6.5, -2.0);
         // Columbia Pike corridor
         Node n26 = new Node("26", "Columbia Pike & George Mason Dr",NodeType.INTERSECTION, -5.45, -5.74);
         Node n27 = new Node("27", "Columbia Pike & S Glebe Rd",    NodeType.INTERSECTION, -3.08, -5.45);
@@ -470,7 +470,7 @@ public class SimulationController {
         // n25 is the main entry (Army Navy Dr), n47 handles GW Pkwy exits,
         // n33 is Pentagon City hub, n31/n32 are Crystal City.
         // n48,n49,n50,n51,n52,n54,n80,n82 removed — too many nodes in small area.
-        Node n47 = new Node("47", "Pentagon North / GW Pkwy",      NodeType.INTERSECTION, 7.52, -2.9);
+        Node n47 = new Node("47", "GW Pkwy / Memorial Bridge Jct",  NodeType.INTERSECTION, 8.5, -0.5);
         // Ballston-Virginia Square
         Node n55 = new Node("55", "N Randolph St & Wilson Blvd",   NodeType.INTERSECTION, -4.54, 0.8);
         Node n56 = new Node("56", "Ballston Quarter & N Glebe Rd", NodeType.INTERSECTION, -4.08, 1.36);
@@ -536,11 +536,10 @@ public class SimulationController {
         graph.addBidirectionalEdge("E29","E30", n18, n19, 0.75);
         graph.addBidirectionalEdge("E31","E32", n19, n20, 0.75);
 
-        // Mid cross-streets (E-W, y=3.5)
+        // Mid cross-streets (E-W): n21→n22→n23→n24; n24→n25 long cross-map edge removed
         graph.addBidirectionalEdge("E33","E34", n21, n22, 0.75);
         graph.addBidirectionalEdge("E35","E36", n22, n23, 0.75);
         graph.addBidirectionalEdge("E37","E38", n23, n24, 0.75);
-        graph.addBidirectionalEdge("E39","E40", n24, n25, 0.75);
 
         // Columbia Pike (E-W, y=2.5)
         graph.addBidirectionalEdge("E41","E42", n26, n27, 0.75);

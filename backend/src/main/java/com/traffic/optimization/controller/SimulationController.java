@@ -376,9 +376,9 @@ public class SimulationController {
     }
 
     /**
-     * Create expanded Arlington road network with REAL geographic coordinates.
-     * Node positions derived from actual lat/lng via OSM tile projection.
-     * ~100 nodes, ~300 edges covering Arlington County, VA.
+     * Arlington road network — all intersections have max degree 4.
+     * Nodes n37,n53,n75,n77,n78,n79,n81 removed; 31 artificial cross-links pruned.
+     * ~93 nodes, ~248 directed edges covering Arlington County, VA.
      */
     private Graph createDefaultGraph() {
         Graph graph = new Graph();
@@ -455,7 +455,7 @@ public class SimulationController {
         Node n34 = new Node("34", "George Mason Dr & Pershing Dr", NodeType.INTERSECTION, -5.45, -0.06);
         Node n35 = new Node("35", "George Mason Dr & 3rd St S",    NodeType.INTERSECTION, -5.45, -3.75);
         Node n36 = new Node("36", "N Glebe Rd & 10th St N",        NodeType.INTERSECTION, -3.08, -0.34);
-        Node n37 = new Node("37", "Washington Blvd & N Glebe Rd",  NodeType.INTERSECTION, -1.81, 0.23);
+        // n37 removed (was Washington Blvd & N Glebe — degree too high, routed via n36)
         Node n38 = new Node("38", "N Lynn St & Key Blvd",          NodeType.INTERSECTION, 5.25, 3.92);
         // Rosslyn area
         Node n39 = new Node("39", "Rosslyn Circle & N Lynn St",    NodeType.INTERSECTION, 4.34, 4.66);
@@ -473,7 +473,7 @@ public class SimulationController {
         Node n50 = new Node("50", "S Eads St & Army Navy Dr",      NodeType.INTERSECTION, 8.66, -2.9);
         Node n51 = new Node("51", "Pentagon Transit Center",       NodeType.INTERSECTION, 8.53, -2.47);
         Node n52 = new Node("52", "S Clark St & 15th St S",        NodeType.INTERSECTION, 8.43, -5.74);
-        Node n53 = new Node("53", "Pentagon Reservation Gate",     NodeType.INTERSECTION, 8.66, -2.04);
+        // n53 removed (was dead-end Pentagon Reservation Gate)
         Node n54 = new Node("54", "Fashion Centre Pentagon City",  NodeType.INTERSECTION, 8.32, -4.6);
         // Ballston-Virginia Square
         Node n55 = new Node("55", "N Randolph St & Wilson Blvd",   NodeType.INTERSECTION, -4.54, 0.8);
@@ -498,23 +498,22 @@ public class SimulationController {
         Node n72 = new Node("72", "Henderson Rd & S Glebe Rd",    NodeType.INTERSECTION, -3.08, -2.33);
         Node n73 = new Node("73", "Henderson Rd & S Quincy St",   NodeType.INTERSECTION, -1.12, -2.19);
         Node n74 = new Node("74", "Henderson Rd & S Highland St", NodeType.INTERSECTION, 0.47, -2.04);
-        Node n75 = new Node("75", "Henderson Rd & S Courthouse Rd",NodeType.INTERSECTION, 1.7, -1.9);
+        // n75 removed (was Henderson Rd & S Courthouse — isolated after degree fixes)
         Node n76 = new Node("76", "Pershing Dr & N Glebe Rd",     NodeType.INTERSECTION, -3.08, 0.17);
-        Node n77 = new Node("77", "Washington Blvd & N Pershing Dr",NodeType.INTERSECTION, -0.67, 0.8);
-        Node n78 = new Node("78", "Clarendon Market & N Highland St",NodeType.INTERSECTION, 0.47, 1.87);
-        Node n79 = new Node("79", "Clarendon Metro",               NodeType.INTERSECTION, 0.63, 2.41);
+        // n77, n78, n79 removed (Washington Blvd/Clarendon infill — caused degree-5 nodes)
         Node n80 = new Node("80", "Pentagon Row & S Hayes St",     NodeType.INTERSECTION, 6.61, -4.17);
-        Node n81 = new Node("81", "Columbia Pike & S Frederick St",NodeType.INTERSECTION, -0.21, -4.94);
+        // n81 removed (was Columbia Pike infill — caused n28 deg=5)
         Node n82 = new Node("82", "12th St S & S Hayes St",        NodeType.INTERSECTION, 7.07, -4.88);
 
+        // n37,n53,n75,n77,n78,n79,n81 removed (degree-fix)
         Node[] intersections = {n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11,n12,n13,n14,
             n15,n16,n17,n18,n19,n20,n21,n22,n23,n24,n25,n26,n27,n28,n29,n30,
-            n31,n32,n33,n34,n35,n36,n37,n38,
+            n31,n32,n33,n34,n35,n36,n38,
             n39,n40,n41,n42,n43,n44,n45,n46,
-            n47,n48,n49,n50,n51,n52,n53,n54,
+            n47,n48,n49,n50,n51,n52,n54,
             n55,n56,n57,n58,n59,n60,n61,
             n62,n63,n64,n65,n66,n67,
-            n68,n69,n70,n71,n72,n73,n74,n75,n76,n77,n78,n79,n80,n81,n82};
+            n68,n69,n70,n71,n72,n73,n74,n76,n80,n82};
         for (Node n : intersections) graph.addNode(n);
 
         // ==================== Edges (73 bidirectional pairs = 146 directed) ====================
@@ -555,10 +554,9 @@ public class SimulationController {
         graph.addBidirectionalEdge("E45","E46", n28, n29, 0.75);
         graph.addBidirectionalEdge("E47","E48", n29, n30, 0.75);
 
-        // N Glebe Rd (N-S, x=3.0)
+        // N Glebe Rd (N-S): n6→n1→n10→n76→n36→n16→n21→n27 (n10-n36 direct removed; n76 mediates)
         graph.addBidirectionalEdge("E49","E50", n6, n1, 0.5);
         graph.addBidirectionalEdge("E51","E52", n1, n10, 0.5);
-        graph.addBidirectionalEdge("E53","E54", n10, n36, 0.5);
         graph.addBidirectionalEdge("E55","E56", n36, n16, 0.5);
         graph.addBidirectionalEdge("E57","E58", n16, n21, 0.75);
         graph.addBidirectionalEdge("E59","E60", n21, n27, 0.5);
@@ -595,23 +593,16 @@ public class SimulationController {
         graph.addBidirectionalEdge("E101","E102", n15, n35, 0.75);
         graph.addBidirectionalEdge("E103","E104", n35, n26, 0.5);
 
-        // Crystal City (x=10.5)
+        // Crystal City
         graph.addBidirectionalEdge("E105","E106", n38, n31, 2.0);
         graph.addBidirectionalEdge("E107","E108", n31, n32, 0.75);
-
-        // Diagonal / cross-links
-        graph.addBidirectionalEdge("E109","E110", n34, n10, 0.75);
-        graph.addBidirectionalEdge("E111","E112", n36, n37, 0.5);
-        graph.addBidirectionalEdge("E113","E114", n37, n12, 1.0);
-        graph.addBidirectionalEdge("E115","E116", n5, n38, 0.9);
-        graph.addBidirectionalEdge("E117","E118", n25, n31, 0.75);
-        graph.addBidirectionalEdge("E119","E120", n30, n33, 0.75);
-        graph.addBidirectionalEdge("E121","E122", n35, n21, 0.75);
+        // n34-n10 diagonal removed (n10 deg fix); n36-n37, n37-n12 removed (n37 deleted)
+        // n5-n38 removed (n5 deg fix); n25-n31 removed (n25 deg fix)
+        // n30-n33 long cross-link removed; n35-n21 removed (n21 deg fix)
 
         // ==================== EXPANSION: New Edges ====================
 
-        // Rosslyn area edges
-        graph.addBidirectionalEdge("E147","E148", n5, n39, 0.75);
+        // Rosslyn area (n5-n39 removed — n5 deg fix; n39 reaches n5 via n41→bE1 path)
         graph.addBidirectionalEdge("E149","E150", n39, n41, 0.5);
         graph.addBidirectionalEdge("E151","E152", n41, bE1, 0.5);
         graph.addBidirectionalEdge("E153","E154", n9, n46, 0.5);
@@ -623,27 +614,27 @@ public class SimulationController {
         graph.addBidirectionalEdge("E165","E166", n42, n44, 0.5);
         graph.addBidirectionalEdge("E167","E168", n44, n45, 0.5);
         graph.addBidirectionalEdge("E169","E170", n41, n40, 0.6);
+        graph.addBidirectionalEdge("EX1","EX2",  n43, n45, 0.6); // N Quinn St connects Lee Hwy & Key Blvd nodes
 
-        // Pentagon area edges
+        // Pentagon area (n80-n25 removed — n25 deg fix; n50-n53 removed — n53 deleted)
         graph.addBidirectionalEdge("E171","E172", n25, n47, 0.5);
         graph.addBidirectionalEdge("E173","E174", n47, n50, 0.5);
         graph.addBidirectionalEdge("E175","E176", n50, n51, 0.5);
         graph.addBidirectionalEdge("E177","E178", n51, bE5, 0.75);
+        graph.addBidirectionalEdge("EX3","EX4",   bE2, n51, 1.0); // Memorial Bridge → Pentagon Transit
         graph.addBidirectionalEdge("E179","E180", n47, n48, 0.5);
         graph.addBidirectionalEdge("E181","E182", n48, n52, 0.5);
         graph.addBidirectionalEdge("E183","E184", n52, n32, 0.5);
         graph.addBidirectionalEdge("E185","E186", n33, n49, 0.5);
         graph.addBidirectionalEdge("E187","E188", n49, n82, 0.5);
         graph.addBidirectionalEdge("E189","E190", n82, n48, 0.5);
-        graph.addBidirectionalEdge("E191","E192", n50, n53, 0.5);
         graph.addBidirectionalEdge("E193","E194", n31, n54, 0.5);
         graph.addBidirectionalEdge("E195","E196", n54, n80, 0.5);
-        graph.addBidirectionalEdge("E197","E198", n80, n25, 0.5);
+        graph.addBidirectionalEdge("E301","E302", n33, n80, 0.5);
 
-        // Ballston-Virginia Square edges
+        // Ballston-Virginia Square (n56-n6 removed — n6 deg fix; n58-n10 kept for Virginia Square connectivity)
         graph.addBidirectionalEdge("E199","E200", n55, n1, 0.75);
         graph.addBidirectionalEdge("E201","E202", n55, n56, 0.5);
-        graph.addBidirectionalEdge("E203","E204", n56, n6, 0.5);
         graph.addBidirectionalEdge("E205","E206", n57, n6, 0.75);
         graph.addBidirectionalEdge("E207","E208", n57, n60, 0.5);
         graph.addBidirectionalEdge("E209","E210", n60, bN4, 0.5);
@@ -654,8 +645,7 @@ public class SimulationController {
         graph.addBidirectionalEdge("E219","E220", n59, n34, 0.5);
         graph.addBidirectionalEdge("E221","E222", n58, n59, 0.5);
 
-        // Shirlington area edges
-        graph.addBidirectionalEdge("E223","E224", n27, n62, 0.75);
+        // Shirlington area (n27-n62 removed — n27 deg fix; reach Shirlington via n28→n64→n65→n62)
         graph.addBidirectionalEdge("E225","E226", n62, n67, 0.5);
         graph.addBidirectionalEdge("E227","E228", n67, bS5, 0.5);
         graph.addBidirectionalEdge("E229","E230", n62, n63, 0.5);
@@ -672,47 +662,25 @@ public class SimulationController {
         graph.addBidirectionalEdge("E247","E248", n70, n71, 0.75);
         graph.addBidirectionalEdge("E249","E250", n71, n38, 0.75);
 
-        // Infill: Henderson Rd corridor (y=4.5)
+        // Henderson Rd corridor (n74-n75 removed — n75 deleted)
         graph.addBidirectionalEdge("E251","E252", n72, n73, 0.75);
         graph.addBidirectionalEdge("E253","E254", n73, n74, 0.75);
-        graph.addBidirectionalEdge("E255","E256", n74, n75, 0.75);
 
-        // N-S connections for infill nodes
-        graph.addBidirectionalEdge("E257","E258", n17, n68, 0.5);
+        // N-S infill connections (n17-n68, n18-n69, n19-n70 removed — degree fixes)
+        // (n16-n72 removed — n16 deg fix; n73-n22, n74-n23, n74-n75/n75-n24 removed — degree+n75 removal)
         graph.addBidirectionalEdge("E259","E260", n68, n73, 0.75);
-        graph.addBidirectionalEdge("E261","E262", n18, n69, 0.5);
         graph.addBidirectionalEdge("E263","E264", n69, n74, 0.75);
-        graph.addBidirectionalEdge("E265","E266", n19, n70, 0.5);
-        graph.addBidirectionalEdge("E267","E268", n70, n75, 0.75);
         graph.addBidirectionalEdge("E269","E270", n20, n71, 0.5);
-        graph.addBidirectionalEdge("E271","E272", n16, n72, 0.75);
         graph.addBidirectionalEdge("E273","E274", n72, n21, 0.5);
-        graph.addBidirectionalEdge("E275","E276", n73, n22, 0.5);
-        graph.addBidirectionalEdge("E277","E278", n74, n23, 0.5);
-        graph.addBidirectionalEdge("E279","E280", n75, n24, 0.5);
 
-        // Pershing/Clarendon connectors (y=6.5)
-        graph.addBidirectionalEdge("E281","E282", n76, n77, 1.0);
-        graph.addBidirectionalEdge("E283","E284", n77, n78, 0.5);
+        // Pershing Dr / N Glebe: n10→n76→n36 (n76-n77/n77-n78/n78-n12 removed — n77,n78 deleted)
         graph.addBidirectionalEdge("E285","E286", n10, n76, 0.5);
         graph.addBidirectionalEdge("E287","E288", n76, n36, 0.5);
-        graph.addBidirectionalEdge("E289","E290", n78, n12, 0.5);
+        // n79 (Clarendon Metro) removed — n2-n79, n79-n3, n79-n77 all removed
+        // n81 (Columbia Pike infill) removed — n28-n81, n81-n29 removed
 
-        // Wilson Blvd infill - Clarendon Metro
-        graph.addBidirectionalEdge("E291","E292", n2, n79, 0.25);
-        graph.addBidirectionalEdge("E293","E294", n79, n3, 0.5);
-        graph.addBidirectionalEdge("E295","E296", n79, n77, 0.75);
-
-        // Columbia Pike infill
-        graph.addBidirectionalEdge("E297","E298", n28, n81, 0.25);
-        graph.addBidirectionalEdge("E299","E300", n81, n29, 0.5);
-
-        // Pentagon Row connector
-        graph.addBidirectionalEdge("E301","E302", n33, n80, 0.5);
-
-        // Additional boundary connections
+        // Additional boundary connections (n51-n20 removed — n20 deg fix)
         graph.addBidirectionalEdge("E303","E304", bW4, n35, 0.75);
-        graph.addBidirectionalEdge("E305","E306", n51, n20, 1.0);
 
         // Original boundary connections
         graph.addBidirectionalEdge("E123","E124", bN1, n6, 0.5);
@@ -722,7 +690,7 @@ public class SimulationController {
         graph.addBidirectionalEdge("E131","E132", bS2, n33, 0.5);
         graph.addBidirectionalEdge("E133","E134", bS3, n32, 0.5);
         graph.addBidirectionalEdge("E135","E136", bE1, n5, 1.5);
-        graph.addBidirectionalEdge("E137","E138", bE2, n20, 1.5);
+        // bE2 now connects to n51 (Pentagon Transit) — added above as EX3-EX4
         graph.addBidirectionalEdge("E139","E140", bE3, n31, 0.9);
         graph.addBidirectionalEdge("E141","E142", bW1, n15, 0.75);
         graph.addBidirectionalEdge("E143","E144", bW2, n34, 0.75);

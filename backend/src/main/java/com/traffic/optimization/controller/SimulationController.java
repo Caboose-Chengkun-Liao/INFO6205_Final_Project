@@ -313,6 +313,18 @@ public class SimulationController {
     }
 
     /**
+     * Set simulation speed multiplier (1x - 10x)
+     */
+    @PostMapping("/speed")
+    public ResponseEntity<Map<String, Object>> setSpeed(@RequestParam double multiplier) {
+        simulationEngine.setSpeedMultiplier(multiplier);
+        return ResponseEntity.ok(Map.of(
+            "success", true,
+            "multiplier", simulationEngine.getSpeedMultiplier()
+        ));
+    }
+
+    /**
      * Compare three pathfinding algorithms: Dijkstra, A*, and Dynamic Routing
      */
     @GetMapping("/pathfind/compare")

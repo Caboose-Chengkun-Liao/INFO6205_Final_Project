@@ -48,8 +48,11 @@ public class SimulationWebSocketHandler {
         }
 
         try {
-            // Advance the simulation by one time step
-            simulationEngine.step();
+            // Advance the simulation by speedMultiplier steps per tick
+            int steps = Math.max(1, (int) Math.round(simulationEngine.getSpeedMultiplier()));
+            for (int i = 0; i < steps; i++) {
+                simulationEngine.step();
+            }
 
             Map<String, Object> data = new HashMap<>();
             data.put("timestamp", System.currentTimeMillis());

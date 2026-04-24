@@ -29,6 +29,9 @@ export const simulationAPI = {
   // Traffic flow management
   createFlow: (flowRequest) => api.post('/simulation/flows', flowRequest),
 
+  // Speed control
+  setSpeed: (multiplier) => api.post(`/simulation/speed?multiplier=${multiplier}`),
+
   // Signal control
   getSignals: () => api.get('/simulation/signals'),
   setSignalMode: (mode) => api.post(`/simulation/signals/mode?mode=${mode}`),

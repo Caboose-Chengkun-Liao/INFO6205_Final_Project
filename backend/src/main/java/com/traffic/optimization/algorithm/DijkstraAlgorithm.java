@@ -321,12 +321,19 @@ public class DijkstraAlgorithm {
     }
 
     /**
-     * A* heuristic function - Euclidean distance
+     * A* heuristic - scaled Euclidean distance.
+     *
+     * Node coordinates are not in km; the minimum km/euclidean ratio across all
+     * edges in the Arlington graph is ~0.108 (bN4→n60: 0.5km / 4.635 units).
+     * Using SCALE ≤ 0.108 guarantees h(n) ≤ actual remaining distance (admissible),
+     * so A* is guaranteed to find the same shortest path as Dijkstra.
      */
+    private static final double HEURISTIC_SCALE = 0.10;
+
     private static double heuristic(Node a, Node b) {
         double dx = a.getX() - b.getX();
         double dy = a.getY() - b.getY();
-        return Math.sqrt(dx * dx + dy * dy);
+        return Math.sqrt(dx * dx + dy * dy) * HEURISTIC_SCALE;
     }
 
     /**

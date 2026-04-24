@@ -124,3 +124,58 @@
   background: #E8E8ED;
   box-shadow: var(--apple-shadow-sm);
 }
+
+.speed-value {
+  color: var(--apple-blue) !important;
+}
+
+.speed-control {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.speed-label {
+  font-size: 13px;
+  color: var(--apple-text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.speed-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-speed {
+  padding: 6px 16px;
+  border: 1.5px solid var(--apple-border);
+  border-radius: 980px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--apple-bg);
+  color: var(--apple-text);
+  transition: all 0.2s ease;
+  font-family: var(--apple-font);
+}
+
+.btn-speed:hover:not(:disabled) {
+  border-color: var(--apple-blue);
+  color: var(--apple-blue);
+}
+
+.btn-speed.active {
+  background: var(--apple-blue);
+  border-color: var(--apple-blue);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.3);
+}
+
+.btn-speed:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}

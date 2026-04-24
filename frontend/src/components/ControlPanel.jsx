@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { simulationAPI } from '../services/api';
 import './ControlPanel.css';
 
+const SPEED_OPTIONS = [1, 2, 3, 5, 10];
+
 const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationState: propSimulationState }) => {
   const [state, setState] = useState('STOPPED');
   const [currentTime, setCurrentTime] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [speed, setSpeed] = useState(1);
 
   // Update local state with data received from WebSocket
   useEffect(() => {
@@ -82,6 +85,15 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
     }
   };
 
+  const handleSpeedChange = async (multiplier) => {
+    try {
+      await simulationAPI.setSpeed(multiplier);
+      setSpeed(multiplier);
+    } catch (error) {
+      console.error('Speed change failed:', error);
+    }
+  };
+
   const handleReset = async () => {
     setLoading(true);
     try {
@@ -108,6 +120,26 @@ const ControlPanel = ({ onStateChange, currentTime: propCurrentTime, simulationS
         <div className="status-item">
           <span className="label">Time</span>
           <span className="value">{formatTime(currentTime)}</span>
+        </div>
+        <div className="status-item">
+          <span className="label">Speed</span>
+          <span className="value speed-value">{speed}x</span>
+        </div>
+      </div>
+
+      <div className="speed-control">
+        <span className="speed-label">Simulation Speed</span>
+        <div className="speed-buttons">
+          {SPEED_OPTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => handleSpeedChange(s)}
+              className={`btn-speed ${speed === s ? 'active' : ''}`}
+              disabled={state === 'STOPPED'}
+            >
+              {s}x
+            </button>
+          ))}
         </div>
       </div>
 
